@@ -1,0 +1,547 @@
+ //Izmeniti telo metoda public static Player findPlayer(final String name)
+    // tako da vraća odgovarajućeg igrača sa datim imenom.
+    // Ukoliko takav igrač ne postoji baciti izuzetak NoPlayerWithThatName.
+    // Ne postoje dva igrača koja se isto zovu.
+
+    public PlayerTenis findPlayer(final String name) {
+        List<PlayerTenis> igrac = new PlayerTenisRepository().findAll();
+        return igrac.stream()
+                .filter(player -> player.getName().equals(name))
+                .findFirst()
+                .orElseThrow(() -> new NoPlayerWithThatName(name));
+    }
+
+    //) Napisati metod koji daje broj različitih igrača iz date države (za koju su nekad nastupali)
+    // koji su osvojili barem jedan gren slem turnir. Voditi računa da su neki igrači
+    // tokom svojih karijera nastupali za više reprezentacija
+
+    public List<PlayerTenis> nastupaliZaReprezantaciju(String zemlja){
+        return listOfGrandSlams.stream()
+                .map(GrandSlam::getWinner)
+                .distinct()
+                .filter(playerTenis -> playerTenis.getNationality().contains(zemlja))
+                .collect(Collectors.toList());
+    }
+
+    //) Napisati metod koji daje mapu čiji je ključ igrač a
+    // vrednost broj osvojenih gren slemova tog igrača.
+
+    public Map<PlayerTenis,Long> pobedePoTeniseru(){
+        return listOfGrandSlams.stream()
+                .collect(Collectors.groupingBy(GrandSlam::getWinner,Collectors.counting()));
+    }
+
+    //Napisati metod koji daje prosečnu starost svih igrača u trenutku kada
+    // su osvojili gren slem. Radi jednostavnosti, podrazumevati da su
+    // igrači tokom osvajanja turnira imali onoliko godina koliko pune u toj kalendarskoj godini.
+
+    public double averageGodineOsvajanje() {
+        return listOfGrandSlams.stream()
+                .mapToInt(slam -> slam.getYear() - slam.getWinner().getDateOfBirth().getYear())
+                .average()
+                .orElse(0.0);
+    }
+
+   // Napisati metod koji daje listu igrača, sortiranu od najstarijeg do najmlađeg igrača.
+    // Proveriti ispravnost ovako napisanih metoda
+
+    public List<PlayerTenis> sortiranjePoGod(){
+        return listOfGrandSlams.stream()
+                .map(GrandSlam::getWinner)
+                .sorted(Comparator.comparing(playerTenis -> playerTenis.getDateOfBirth()))
+                .collect(Collectors.toList());
+    }
+
+    //Napisati metod koji pomenuti fajl skida sa interneta. Obraditi potencijalne izuzetke
+    // (nepostojanje datoteke, neuspelo skidanje i slično
+    public void skiniFajl(){
+        try {
+            URL link = new URL("https://raw.githubusercontent.com/pedja500/pedja/refs/heads/main/podaciODvadesetomVeku.txt");
+
+            try(BufferedInputStream in = new BufferedInputStream(link.openStream())){
+                BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream("ucitaniTeniseri.txt"));
+
+                byte[] buffer = new byte[1024];
+                int ucitani;
+                while((ucitani= in.read(buffer,0,1024))!=-1){
+                    out.write(buffer,0,ucitani);
+                }
+
+                in.close();
+                out.close();
+            }catch (IOException e){
+                System.out.println(e.getMessage());
+            }
+
+        } catch (MalformedURLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    //Za datog tenisera (koji je osvojio barem jedan gren slem u 21. veku)
+    // odrediti koliko je ukupno gren slemova osvojio u karijeri.
+
+    public long brojPobeda21Vek(String ime){
+        return listOfGrandSlams.stream()
+                .filter(grandSlam -> grandSlam.getWinner().getName().contains(ime))
+                .count();
+    }
+
+    public long brojPobeda20Vek(String ime){
+        int pobede=-1;
+        try(BufferedReader red = new BufferedReader(new FileReader("ucitaniTeniseri.txt"))){
+            String line;
+            while((line = red.readLine())!=null){
+                String[] split = line.split(":");
+                if(split[0].equals(ime)){
+                     pobede = Integer.parseInt(split[1].trim());
+                }
+            }
+        red.close();
+        }catch(FileNotFoundException e){
+            System.out.println(e.getMessage());
+        }catch(IOException e){
+            System.out.println(e.getMessage());
+        }catch(NumberFormatException e){
+            System.out.println(e.getMessage());
+        }
+        return pobede;
+
+    }
+
+    public long pobedeUkupnoVekovi(String ime){
+        long Vek20 =-1;
+        long Vek21 = -1;
+
+        Vek20= brojPobeda20Vek(ime);
+        Vek21= brojPobeda21Vek(ime);
+        return Vek20+Vek21;
+    }
+
+    public <T> List<T> spojiListe(List<T> lista1,List<T> lista2 ) {
+        int i=0,j=0;
+        List<T> lista3 =new ArrayList<>();
+        while( lista1.size() > i && lista2.size()>j){
+            lista3.add(lista1.get(i));
+            lista3.add(lista2.get(j));
+            i++;j++;
+        }
+        while( lista1.size() > i){
+            lista3.add(lista1.get(i));
+        }
+        while(lista2.size()>j){
+            lista3.add(lista2.get(j));
+        }
+        return lista3;
+    }
+	
+	
+	
+	// OVDE JE SAD ZA FUDBALERI
+	
+	 public long brojIgracaZemlja(String zemlja) {
+        return getFootballPlayers2012().stream()
+                .filter(playerFootball -> playerFootball.getNationality().contains(zemlja))
+                .count();
+    }
+
+    //Određuje prosečnu starost igrača datog kluba u 2012. godini. Ukoliko je zadat
+    //klub za koji ne postoje podaci, baciti NoPlayersFoundException izuzetak.
+
+    public double averageStarost(String klub) {
+        return getFootballPlayers2012().stream()
+                .filter(playerFootball -> playerFootball.getClub().contains(klub))
+                .mapToInt(player -> player.getAge())
+                .average()
+                .orElseThrow(() -> new NoPlayersFoundException("Nema nista: " + klub));
+    }
+
+    // Štampa listu igrača koji u datoj godini (koja je veća ili jednaka 2012) pune bar 40
+    //godina.
+
+    public List<PlayerFootball> pune40(int godina) {
+        if (godina > 2012) {
+            return getFootballPlayers2012().stream()
+                    .filter(playerFootball -> playerFootball.getAge() + godina - 2012 >= 40)
+                    .collect(Collectors.toList());
+        } else {
+            return null;
+        }
+    }
+
+    // Štampa listu igrača sa date pozicije, sortiranu po imenu kluba, a u okviru istog
+    //kluba sortirati igrače po godinama. Voditi računa da neki igrači mogu da igraju na više
+    //pozicija.
+
+    public List<PlayerFootball> sortiraj(String pozicija) {
+        return getFootballPlayers2012().stream()
+                .filter(playerFootball -> playerFootball.getPosition().toLowerCase().contains(pozicija.toLowerCase()))
+                .sorted(Comparator.comparing(PlayerFootball::getClub).thenComparing(PlayerFootball::getAge))
+                .collect(Collectors.toList());
+    }
+
+    // Napisati kod koji podatke učitava iz datog fajla. Obraditi potencijalne izuzetke
+    //(nepostojanje datoteke, eventualno loš format i slično).
+
+    public List<PlayerFootball> ucitajFajl() {
+        List<PlayerFootball> lista = new ArrayList<>();
+        try (BufferedReader read = new BufferedReader(new FileReader("football_players.csv"))) {
+            String line;
+            int id = 1000;
+            while ((line = read.readLine()) != null) {
+                String[] split = line.split(",");
+                if (split.length != 5) {
+                    throw new IllegalArgumentException("Nema dovoljno argumenta" + line);
+                } else {
+                    String ime = split[0].trim();
+                    String pozicija = split[1].trim();
+                    String club = split[2].trim();
+                    String zemlja = split[3].trim();
+                    int age = Integer.parseInt(split[4].trim());
+                    PlayerFootball nov = new PlayerFootball(id++, ime, pozicija, club, zemlja, age);
+                    lista.add(nov);
+                }
+            }
+
+        } catch (FileNotFoundException e) {
+            System.out.println(e.fillInStackTrace());
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        } catch (NumberFormatException e) {
+            System.out.println(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
+
+        return lista;
+    }
+
+    //Napisati metod koji iz učitanih podataka štampa detalje o svim fudbalerima koji
+    //igraju za dati klub.
+
+    public List<PlayerFootball> listaIgraciKlub(String klub){
+        List<PlayerFootball> lista = ucitajFajl();
+
+        return lista.stream()
+                .filter(playerFootball -> playerFootball.getClub().equals(klub))
+                .collect(Collectors.toList());
+    }
+
+    //Napisati generički metod kojim se lista objekata (koji ne implementiraju interfejs
+    //Comparable) sortira u neopadajući redosled u odnosu na rezultat primene nekog Integer
+    //mapiranja na date objekte. Na primer, primenom istog metoda bi trebalo sortirati igrače po
+    //godinama, kao i po dužini imena.
+
+    public static <T> List<T> sortirajGeneric(List<T> list, Function<T,Integer> funk){
+        return list.stream().sorted(Comparator.comparing(funk)).collect(Collectors.toList());
+    }
+	
+	
+	// OVDE JE SAD SA EMPLOYEES
+	
+	public List<Employee> getAllEmployee() {
+
+        return employees;
+    }
+
+    //zaposlenog koji ima treću najveću platu (uopštiti za n – tu najveću platu).
+    // Ukoliko takav zaposleni ne postoji baciti izuzetak NoSuchElementException.
+
+    public Employee nTaPlata(int n) {
+        return getAllEmployee().stream()
+                .sorted(Comparator.comparingInt(Employee::getSalary).reversed())
+                .skip(n - 1)
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException());
+    }
+
+    //listu svih zaposlenih koji su se pridružili 2023. godine
+    //(godina pridruživanja zaposlenog može se videti iz prva četiri karaktera njegovog ID-a).
+
+    public List<Employee> pridruziliSe2023() {
+        return getAllEmployee().stream()
+                .filter(employee -> employee.getId().substring(0, 4).equals("2023"))
+                .collect(Collectors.toList());
+    }
+
+    //listu svih (razlicitih) projekata
+    // na kojima radi barem jedan zaposljeni čija je plata preko 2500
+
+    public List<Project> radeBogati() {
+        return getAllEmployee().stream()
+                .filter(employee -> employee.getSalary() > 2500)
+                .flatMap(employee -> employee.getProjects().stream())
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    //statistiku plata za sve zaposlene
+    // (koristiti metod summaryStatistics() koji može da se primeni na int stream).
+
+    public void statistikaPlata() {
+        IntSummaryStatistics stat = getAllEmployee().stream().mapToInt(Employee::getSalary).summaryStatistics();
+
+        System.out.println("Maksimalna plata: " + stat.getMax());
+        System.out.println("Minimalna plata: " + stat.getMin());
+        System.out.println("Ukupno: " + stat.getSum());
+        System.out.println("Prosečna plata: " + stat.getAverage());
+        System.out.println("Broj zaposlenih: " + stat.getCount());
+    }
+
+    //mapu čiji je ključ godina pridruživanja,
+    // a vrednost broj ljudi koji su se pridružili te godine
+
+    public Map<String, Long> kolkoPridruzivanjaGodisnje() {
+        return getAllEmployee().stream()
+                .collect(Collectors.groupingBy(employee -> employee.getId().substring(0, 4), Collectors.counting()));
+    }
+
+    //Napisati program koji od dva data tekstualna fajla kreira novi, dobijen prepisivanjem
+    // linija datih fajlova, naizmenično – prva linija prvog, prva linija drugog,
+    // druga linija prvog, itd.
+    // Ako je prvi karakter linije veliko slovo engleskog alfabeta,
+    // linija se prepisuje tako što se sva slova engleskog alfabeta pretvore u velika.
+    // Ako je prvi karakter malo slovo engleskog alfabeta, linija se prepisuje tako što se
+    // okrene redosled svih karaktera u liniji, a sva slova engleskog alfabeta se pretvore u
+    // mala. Ako prvi karakter nije slovo, linija se prepisuje onako kako je data.
+    // Kada se prepišu sve linije nekog od ulaznih fajlova, prepisivanje nastaviti iz onog
+    // fajla u kome ima linija
+
+    public void naizmenicnoPisiFajl() {
+
+        try (BufferedReader read1 = new BufferedReader(new FileReader("fajl1.txt"));
+             BufferedReader read2 = new BufferedReader(new FileReader("fajl2.txt"));
+             BufferedWriter out = new BufferedWriter(new FileWriter("fajl3.txt"))) {
+
+            String line1, line2;
+
+            while ((line1 = read1.readLine()) != null && (line2 = read2.readLine()) != null) {
+
+                // za line1
+                if (!Character.isAlphabetic(line1.charAt(0))) {
+                    out.write(line1 + "\n");
+                } else if (line1.substring(0, 1).toUpperCase().equals(line1.substring(0, 1))) {
+                    out.write(line1.toUpperCase() + "\n");
+                } else {
+                    StringBuilder builder = new StringBuilder(line1);
+                    String obrnut = builder.reverse().toString();
+                    out.write(obrnut.toLowerCase() + "\n");
+                }
+                // za line2
+                if (!Character.isAlphabetic(line2.charAt(0))) {
+                    out.write(line2 + "\n");
+                } else if (line2.substring(0, 1).toUpperCase().equals(line2.substring(0, 1))) {
+                    out.write(line2.toUpperCase() + "\n");
+                } else {
+                    StringBuilder builder = new StringBuilder(line2);
+                    String obrnut = builder.reverse().toString();
+                    out.write(obrnut.toLowerCase() + "\n");
+                }
+            }
+
+            while((line1 = read1.readLine()) != null) {
+                if (!Character.isAlphabetic(line1.charAt(0))) {
+                    out.write(line1 + "\n");
+                } else if (line1.substring(0, 1).toUpperCase().equals(line1.substring(0, 1))) {
+                    out.write(line1.toUpperCase() + "\n");
+                } else {
+                    StringBuilder builder = new StringBuilder(line1);
+                    String obrnut = builder.reverse().toString();
+                    out.write(obrnut.toLowerCase() + "\n");
+                }
+            }
+
+            while((line2 = read2.readLine()) != null) {
+                if (!Character.isAlphabetic(line2.charAt(0))) {
+                    out.write(line2 + "\n");
+                } else if (line2.substring(0, 1).toUpperCase().equals(line2.substring(0, 1))) {
+                    out.write(line2.toUpperCase() + "\n");
+                } else {
+                    StringBuilder builder = new StringBuilder(line2);
+                    String obrnut = builder.reverse().toString();
+                    out.write(obrnut.toLowerCase() + "\n");
+                }
+            }
+            read1.close();
+            read2.close();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    //Napisati generički metod koji kao parametre uzima listu bilo kog tipa i predikat.
+    // Metod treba da vrati (array) listu koja sadrži samo elemente koji zadovoljavaju predikat.
+
+    public static <T> List<T> genericZadovoljiPredikat(List<T> lista, Predicate<T> pred){
+       List<T> vrati = new ArrayList<>();
+        int i=0;
+        for(T tip: lista){
+                if(pred.test(tip)){
+                    vrati.add(tip);
+                }
+        }
+        return vrati;
+    }
+	
+	
+	
+	// BufferedReader - najčešće korišćen
+BufferedReader br = new BufferedReader(new FileReader("fajl.txt"));
+String line;
+while ((line = br.readLine()) != null) {
+    System.out.println(line);
+}
+
+
+// FileWriter - osnovno pisanje
+FileWriter fw = new FileWriter("fajl.txt");
+fw.write("Tekst");
+fw.close();
+
+// BufferedWriter - efikasnije
+BufferedWriter bw = new BufferedWriter(new FileWriter("fajl.txt"));
+bw.write("Tekst");
+bw.newLine(); // dodaje novi red
+bw.close();
+
+// PrintWriter - najpraktičniji
+PrintWriter pw = new PrintWriter("fajl.txt");
+pw.println("Automatski dodaje novi red");
+pw.printf("Formatiranje: %s %d%n", "tekst", 123);
+pw.close();
+
+
+//SKIDANJE SA NET
+
+
+// InputStream
+URL url = new URL("https://example.com/file.txt");
+BufferedReader reader = new BufferedReader(
+    new InputStreamReader(url.openStream()));
+BufferedWriter writer = new BufferedWriter(
+    new FileWriter("file.txt"));
+
+String line;
+while ((line = reader.readLine()) != null) {
+    writer.write(line);
+    writer.newLine();
+}
+
+reader.close();
+writer.close();
+
+ try (InputStream in = new URL(fileUrl).openStream();
+             FileOutputStream out = new FileOutputStream(outputFile)) {
+            
+            // Kreiraj bafer od 1KB (možeš podesiti po potrebi)
+            byte[] buffer = new byte[1024]; 
+            int bytesRead;
+            
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+
+// bitan je i ovaj kad skidas jer onda moze citas fajl po bitovi 
+BufferedInputStream
+
+
+
+// CSV fajl
+BufferedReader csvReader = new BufferedReader(new FileReader("data.csv"));
+String row;
+while ((row = csvReader.readLine()) != null) {
+    String[] data = row.split(",");
+    System.out.println(Arrays.toString(data));
+}
+csvReader.close();
+
+
+// bitni EXCEPTIONI 
+} catch (FileNotFoundException e) {
+    System.err.println("Fajl ne postoji: " + e.getMessage());
+    
+} catch (IOException e) {
+    System.err.println("IO greška: " + e.getMessage());
+    
+} catch (SecurityException e) {
+    System.err.println("Security greška: " + e.getMessage());
+    
+} catch (StringIndexOutOfBoundsException e) {
+    System.err.println("Prazan string: " + e.getMessage());
+    
+} catch (NullPointerException e) {
+    System.err.println("Null referenca: " + e.getMessage());
+} catch (MalformedURLException e) {
+            System.err.println("Nevalidan URL: " + e.getMessage());
+            
+        }
+
+
+
+
+// najmanji element Generic begin end
+public static <T extends Comparable<? super T>> T min(List<? extends T> list, int begin, int end) {
+    // Provera da li je opseg validan
+    if (begin < 0 || end > list.size() || begin >= end) {
+        throw new IllegalArgumentException("Nevalidan opseg liste");
+    }
+
+    T minElem = list.get(begin);
+
+    for (++begin; begin < end; ++begin) {
+        if (minElem.compareTo(list.get(begin)) > 0) {
+            minElem = list.get(begin);
+        }
+    }
+
+    return minElem;
+}
+
+//Kreirati klasu ScramblerReader koja nasleđuje klasu Reader i kroz konstruktor prima instancu klase Reader, 
+// a zatim ulazni tekst koji dolazi kroz instancu iz konstruktora transformiše tako da svaku prazninu pretvara u karakter ‘*’,
+// a svaki karakter ‘*’ u prazninu. Osnova je data na https://github.com/ninja643/OOP2_april_2023/blob/master/src/main/java/rs/ac/ni/pmf/oop2/ april_2023/zad2/ScramblerReader.java, 
+// ali je treba dopuniti. Na primer, za ulazni string “a**b c d”, vrednost actual posle izvršenja komandi 
+// reader = new BufferedReader(new ScramblerReader(new StringReader(input)))) String actual = reader.readLine(); 
+// treba da bude “a b*c**d”. Napisati testove koji testiraju klasu ScramblerReader:
+
+
+
+public class ScramblerReader extends Reader {
+    private final Reader innerReader;
+
+    public ScramblerReader(Reader innerReader) {
+        this.innerReader = innerReader;
+    }
+
+    @Override
+    public int read(char[] cbuf, int off, int len) throws IOException {
+        // Pročitaj deo iz unutrašnjeg Reader-a
+        int numRead = innerReader.read(cbuf, off, len);
+        if (numRead == -1) {
+            return -1; // kraj stream-a
+        }
+
+        // Transformiši karaktere
+        for (int i = off; i < off + numRead; i++) {
+            if (cbuf[i] == ' ') {
+                cbuf[i] = '*';
+            } else if (cbuf[i] == '*') {
+                cbuf[i] = ' ';
+            }
+        }
+
+        return numRead;
+    }
+
+    @Override
+    public void close() throws IOException {
+        innerReader.close();
+    }
+}
+
+
+
+
+
+
+
+
