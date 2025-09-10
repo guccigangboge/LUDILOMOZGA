@@ -1,0 +1,5576 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+using namespace std;
+
+struct node {
+	int broj;
+	struct node* levo;
+	struct node* desno;
+};
+
+node* createTree(int br) {
+	node* koren = new node();
+	koren->levo = koren->desno = nullptr;
+	koren->broj = br;
+	return koren;
+}
+
+// ubacuje u uredjeno stablo ako je broj veci od pocetni koren ide desno ako je manji ide levo 
+node* insert(node* koren, int br) {
+	if (koren == nullptr) {
+		node* temp = createTree(br);
+		koren = temp;
+		return koren;
+	}
+	if (koren->broj > br) {
+		koren->levo = insert(koren->levo, br);
+	}
+	else {
+		koren->desno = insert(koren->desno, br);
+	}
+
+	return koren;
+}
+
+int size(node* cvor) {
+	return cvor ? 1 + size(cvor->desno) + size(cvor->levo) : 0; //	ako cvor nije nullptr daje 1 a ako jeste 0 sve se sabere dok se prodje kroz stablo i dobije se broj
+}
+
+void preorder(node* koren) {
+	if (koren == nullptr) return;
+
+	cout << koren->broj << endl;
+	preorder(koren->levo);
+	preorder(koren->desno);
+}
+
+
+void inorder(node* koren) {
+	if (koren == nullptr) return;
+
+	inorder(koren->levo);
+	cout << koren->broj << endl;
+	inorder(koren->desno);
+}
+
+
+void postorder(node* koren) {
+	if (koren == nullptr) return;
+
+	inorder(koren->levo);
+	inorder(koren->desno);
+	cout << koren->broj << endl;
+}
+
+void Draw(node* koren, int nivo) //	nemam pojma ovu funkciju ni ne crta lepo nece treba na kolok vljd
+{
+	if (koren)
+	{
+		Draw(koren->desno, nivo + 1);
+		printf("%*s%d\n", 4 * nivo, " ", koren->broj);
+		Draw(koren->levo, nivo + 1);
+	}
+}
+
+//	kolko puta se broj pojavljuje u stablo
+int pojavljivanje(node* koren, int br) {
+	if (koren->broj == br) {
+		return 1 + pojavljivanje(koren->levo,br) + pojavljivanje(koren->desno,br); //	ako se pojavilo vraca 1 i opet se sabira dok prolazi kroz stablo ko size
+	}
+	else {
+		return 0 + pojavljivanje(koren->levo, br) + pojavljivanje(koren->desno, br);
+	}
+}
+
+int minbroj(node* koren) {	//	za uredjeno ide skroz levo dok ne dodjemo do kraj i toe min
+	if (koren == nullptr) return -1;
+	while (koren->levo != nullptr) {
+		koren = koren->levo;
+	}
+	return koren->broj;
+	}
+
+int maxbroj(node* koren) {	//	za uredjeno ide skroz desno dok ne dodjemo do kraj i toe max
+	if (koren == nullptr) return -1;
+	return koren->desno ? maxbroj(koren->desno) : koren->broj;
+}
+
+// nalazi najmanji broj u neuredjeno stablo
+int minbrojneuredjeno(node* koren) {
+	if (koren == nullptr) return 10000;	// vracamo ovlki broj da bi se osigurali da ce bude veci od bilo koji drugi u stablo inace bi nam to bio min zato nije -1 npr
+	int min = koren->broj;
+
+	int minlevo = minbrojneuredjeno(koren->levo);
+	int mindesno = minbrojneuredjeno(koren->desno);
+
+	if (min > minlevo) {
+		min = minlevo;
+	}
+	if (min > mindesno) {
+		min = mindesno;
+	}
+
+	return min;
+}
+
+
+//proverava da li je stablo uredjeni ili ne
+bool uredjen(node* koren, node* min =nullptr, node* max=nullptr) {
+	if (koren == nullptr) return true;
+	
+	if ((min != nullptr && koren->broj <= min->broj) ||
+		(max != nullptr && koren->broj >= max->broj)) return false;
+	
+	//	abnormalno glupo i mrzim ovaj kurac, kurac
+	return uredjen(koren->levo,koren, max) && uredjen(koren->desno, min,koren);
+}
+
+//	trazi broj u neuredjeno stablo
+node* nadjiBrojNeuredjeno(node* koren, int br) {
+
+	if (koren == nullptr) return nullptr;
+
+	if (koren->broj == br) return koren;
+
+	node* korenLevo = nadjiBrojNeuredjeno(koren->levo, br);
+	if (korenLevo != nullptr) return korenLevo;	//	ovo radi zato sto ako je broj u levi deo stabla nikad nece dodje do nullptr jer ce vrati broj sto smo trazili
+												//	inace ce mora bude nullptr pa moze nastavljamo sa funkciju i gledamo desnu stranu
+	return nadjiBrojNeuredjeno(koren->desno, br);	//	rekurzivno idemo kroz desnu i gledamo dal je tu a jeste
+}
+
+//	dodaje elemenat u neuredjeno stablo
+node* ubaciNeuredjenoStablo(node* koren, int br) {
+	//	da menja random broj je u main
+	if (koren == nullptr) {
+		node* novi = createTree(br);
+		koren = novi;
+		return koren;
+	}
+	if (rand() % 2 == 0) {
+		koren->levo = ubaciNeuredjenoStablo(koren->levo, br);
+	}
+	else {
+		koren->desno = ubaciNeuredjenoStablo(koren->desno, br);
+	}
+	return koren;
+}
+
+//	obrisi stablo bilo koje
+void obrisiStablo(node* koren) {
+	if (koren == nullptr) return;
+
+	obrisiStablo(koren->levo);
+	obrisiStablo(koren->desno);
+
+	delete koren;
+}
+
+// brise cvor u uredjenom stablu
+node* obrisiNodeUredjeno(node* koren, int br) {
+
+	if (koren == nullptr) return nullptr;
+
+	if (koren->broj > br) {
+
+		koren->levo = obrisiNodeUredjeno(koren->levo, br);
+
+	} else {
+
+		if (koren->broj < br) {
+
+			koren->desno = obrisiNodeUredjeno(koren->desno, br);
+
+		} else {
+
+			if (koren->levo == nullptr && koren->desno == nullptr) {
+
+				delete koren;
+				return nullptr;
+
+			}
+
+			if (koren->desno == nullptr) {
+
+				node* pom = koren->levo;
+				delete koren;
+				return pom;
+
+			}
+
+			if (koren->levo == nullptr) {
+
+				node* pom = koren->desno;
+				delete koren;
+				return pom;
+
+			}
+
+			node* pom = koren->desno;
+			while (pom->levo != nullptr) pom = pom->levo;
+			koren->broj = pom->broj;
+			return obrisiNodeUredjeno(koren->desno, pom->broj);
+
+		}
+	}
+	return koren;
+}
+
+// brise cvor u neuredjenom stablu
+node* obrisiNodeNeuredjeno(node* koren, int br) {
+
+	if (koren == nullptr) return nullptr;
+
+	if (koren->broj == br) {
+
+		if (koren->levo == nullptr && koren->desno == nullptr) {
+
+			delete koren;
+			return nullptr;
+
+		}
+
+		if (koren->desno == nullptr) {
+
+			node* pom = koren->levo;
+			delete koren;
+			return pom;
+
+		}
+
+		if (koren->levo == nullptr) {
+
+			node* pom = koren->desno;
+			delete koren;
+			return pom;
+
+		}
+
+		node* pom = koren->desno;
+		while (pom->levo != nullptr) pom = pom->levo;
+		koren->broj = pom->broj;
+		return obrisiNodeNeuredjeno(koren->desno, pom->broj);
+
+
+	}
+	else {
+
+		koren->levo = obrisiNodeNeuredjeno(koren->levo, br);
+		koren->desno = obrisiNodeNeuredjeno(koren->desno, br);
+		return koren;
+
+	}
+	return koren;
+}
+
+
+
+Napisati C++ funkciju koja će vratiti najveći element u neuređenom binarnom
+stablu bez korišćenja rekurzije. Nakon toga napisati glavni program, stablo učitati
+iz datoteke i dati primer nalaženja najvećeg elementa
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+struct tree {
+	int broj;
+	struct tree* levi;
+	struct tree* desni;
+};
+
+struct node {
+	tree* cvor;
+	struct node* sledeci;
+};
+
+struct queue {
+	struct node* front;
+	struct node* rear;
+};
+
+tree* createTree(int broj) {
+	tree* pom = new tree();
+	pom->broj = broj;
+	pom->desni = pom->levi = nullptr;
+	return pom;
+}
+
+tree* insertTree(tree* cvor, int broj) {
+	if (cvor == nullptr) {
+		tree* pom= createTree(broj);
+		cvor = pom;
+		return cvor;
+	}
+	if (rand() % 2 == 0) {
+		cvor->levi = insertTree(cvor->levi, broj);
+	}
+	else {
+		cvor->desni = insertTree(cvor->desni, broj);
+	}
+	return cvor;
+}
+
+tree* pisiFajl(string filename) {
+	ifstream f(filename);
+	int n;
+	f >> n;
+	tree* pom = nullptr;
+	for (int i = 0; i < n; i++)
+	{
+		int br;
+		f >> br;
+		pom = insertTree(pom, br);
+	}
+	f.close();
+	return pom;
+}
+
+queue* createQueue() {
+	queue* pom = new queue();
+	pom->front = pom->rear = nullptr;
+	return pom;
+}
+
+bool isQueEmpty(queue* Q) {
+	return Q->front == nullptr;
+}
+
+void enQueue(queue* Q, tree* cvor) {
+	if (Q == nullptr) {
+		cout << "GRESKA QUEUE NE POSTOJI"  << endl;
+		return;
+	}
+	node* pom = new node();
+	pom->cvor = cvor;
+	pom->sledeci = nullptr;
+
+	if (Q->rear == nullptr) Q->rear = pom;
+	else {
+		Q->rear->sledeci = pom;
+		Q->rear = pom;
+	}
+	if (Q->front == nullptr)Q->front = pom;
+}
+
+tree* deQueue(queue* Q) {
+	if (isQueEmpty(Q)) {
+		cout << "GRESKA QUEUE JE PRAZAN" << endl;
+		return nullptr;
+	}
+	node* pom = Q->front;
+	tree* pom2 = Q->front->cvor;
+	Q->front = Q->front->sledeci;
+	delete pom;
+	return pom2;
+}
+
+void deleteQueue(queue* Q) {
+	while (!isQueEmpty(Q)) {
+		node* pom = Q->front;
+		Q->front = Q->front->sledeci;
+		delete pom;
+	}
+	delete Q;
+}
+
+int nadjiNajveciBroj(tree* cvor) {
+	int max = -1000;
+	queue* Q = createQueue();
+	enQueue(Q, cvor);
+	tree* pom = nullptr;
+	while (!isQueEmpty(Q)) {
+		pom = deQueue(Q);
+		if (pom->broj > max) max = pom->broj;
+
+		//cout << temp->data << " "; 
+		//ovako se radi zadatak 123 samo funkcija je void i nema return isto obrisemo max logicno
+
+		if (pom->levi != nullptr) enQueue(Q, pom->levi);  //	da da ovo zapravo posto je pokazivac na kurac moze da zna njegov pokazivac na levo i desno i zato zna
+		if (pom->desni != nullptr) enQueue(Q, pom->desni);//	znam rtd malo
+	}
+	deleteQueue(Q);
+	return max;
+}
+
+126. U provom redu datoteke ulaz.txt je zadat broj n koji prestavlja broj elemenata
+stabla. U narednih n redova je zadato n celih brojeva koji će predstavljati elemente
+stabla. Napisati program koji na osnovu podataka iz ulazne datoteke formira
+stablo, i to tako što raspoređuje čvorove slučajnim izborom u levo ili desno
+podstablo. Svaki novoubačeni element mora biti list stabla formiranog do tog
+trenutka. Slučajni izbor se primenjuje na izbor svakog podstabla za smeštanje
+novog elementa. Nakon toga, napisati metodu koja pronalazi najveći (najmanji)
+element u stablu.
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+struct tree {
+	int broj;
+	struct tree* levi,*desni;
+};
+
+tree* createTree(int broj) {
+	tree* pom = new tree();
+	pom->broj = broj;
+	pom->desni = pom->levi = nullptr;
+	return pom;
+}
+
+tree* insert(tree* cvor, int broj) {
+	if (cvor == nullptr) {
+		tree* pom = createTree(broj);
+		cvor = pom;
+		return cvor;
+	}
+	if (rand() % 2 == 1) {
+		cvor->levi = insert(cvor->levi, broj);
+	}
+	else {
+		cvor->desni = insert(cvor->desni, broj);
+	}
+	return cvor;
+}
+
+
+tree* pisiFajl(string fajl) {
+	ifstream f(fajl);
+	int n;
+	f >> n;
+	tree* pom = nullptr;
+
+	for (int i = 0; i < n; i++)
+	{
+		int broj;
+		f >> broj;
+		pom = insert(pom, broj);
+	}
+	f.close();
+	return pom;
+}
+
+int nadjiMax(tree* cvor) {
+	if (cvor == nullptr) return -10000;
+	int max = cvor->broj;
+	
+	int maxlevi = nadjiMax(cvor->levi);
+	int maxdesni = nadjiMax(cvor->desni);
+
+	if (maxlevi > max) max = maxlevi;
+	if (maxdesni > max) max = maxdesni;
+
+	return max;
+}
+
+int nadjiMin(tree* cvor) {
+	if (cvor == nullptr) return 10000;
+
+	int min = cvor->broj;
+	int minlevi = nadjiMin(cvor->levi);
+	int mindesni = nadjiMin(cvor->desni);
+
+	if (minlevi < min) min = minlevi;
+	if (mindesni < min) min = mindesni;
+	
+	return min;
+}
+
+int main() {
+	tree* pendza = pisiFajl("filename.txt");
+	int min = nadjiMin(pendza);
+	int max = nadjiMax(pendza);
+
+	cout << min << " " << max;
+	return 0;
+}
+
+127. U provom redu datoteke ulaz.txt je zadat broj n koji prestavlja broj elemenata
+stabla. U narednih n redova je zadato n celih brojeva koji će predstavljati elemente
+stabla. Napisati program koji na osnovu podataka iz ulazne datoteke formira
+stablo, i to tako što raspoređuje čvorove slučajnim izborom u levo ili desno
+podstablo. Svaki novoubačeni element mora biti list stabla formiranog do tog
+trenutka. Slučajni izbor se primenjuje na izbor svakog podstabla za smeštanje
+novog elementa. Nakon toga, napisati metodu koja pronalazi sva različita
+pojavljivanja brojeva, kao i njihov broj pojavljivanja. Rezultat ispisati u datoteku
+izlaz.txt i to tako što će u svakom redu biti zapisan neki element binarnog stabla,
+a nakon razmaka broj pojavljivanja tog elementa.
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+struct tree {
+	int broj;
+	struct tree* levi, * desni;
+};
+
+tree* createTree(int broj) {
+	tree* pom = new tree();
+	pom->broj = broj;
+	pom->desni = pom->levi = nullptr;
+	return pom;
+}
+
+tree* insert(tree* cvor, int broj) {
+	if (cvor == nullptr) {
+		tree* pom = createTree(broj);
+		cvor = pom;
+		return cvor;
+	}
+	if (rand() % 2 == 1) {
+		cvor->levi = insert(cvor->levi, broj);
+	}
+	else {
+		cvor->desni = insert(cvor->desni, broj);
+	}
+	return cvor;
+}
+
+
+tree* pisiFajl(string fajl) {
+	ifstream f(fajl);
+	int n;
+	f >> n;
+	tree* pom = nullptr;
+
+	for (int i = 0; i < n; i++)
+	{
+		int broj;
+		f >> broj;
+		pom = insert(pom, broj);
+	}
+	f.close();
+	return pom;
+}
+
+struct node{
+	int broj;
+	int pojavljivanje;
+	struct node* sledeci;
+};
+
+node* createNode(int broj) {
+	node* pom = new node();
+	pom->broj = broj;
+	pom->pojavljivanje = 1;
+	pom->sledeci = nullptr;
+	return pom;
+}
+
+node* ubaciNode(node* head, node* elem) {
+	if (head == nullptr) return elem;
+
+	elem->sledeci = head;
+	head = elem;
+
+	return head;
+}
+
+bool ponavljanjeBroja(node* head,int br) {
+
+	if (head == nullptr) return false;
+
+	node* pom = head;
+	while (pom != nullptr) {
+		if (pom->broj == br) {
+			++pom->pojavljivanje;
+			return true;
+		}
+		pom = pom->sledeci;
+	}
+
+	return false;
+}
+
+void izbroji(tree* cvor,node*& pom) {
+
+	if (cvor == nullptr)return;
+
+	if (!ponavljanjeBroja(pom, cvor->broj)) 
+		pom = ubaciNode(pom, createNode(cvor->broj));
+
+	izbroji(cvor->levi,pom);
+	izbroji(cvor->desni,pom);
+}
+
+int main() {
+
+	tree* stablo = pisiFajl("ulaz.txt");
+	node* pom = nullptr;
+
+	izbroji(stablo, pom);
+
+	ofstream out("izlaz.txt");
+	node* p = pom;
+	while (p != nullptr) {
+		out << p->broj << " " << p->pojavljivanje << endl;
+		p = p->sledeci;
+	}
+	out.close();
+
+	return 0;
+}
+
+
+128. Napisati metodu koja će vratiti broj čvorova binarnog stabla kod kojih je zbir
+elemenata levog podstabla veći od zbira elemenata desnog podstabla.
+129. Napisati metodu koja će vratiti broj čvorova stabla koji su roditelji barem jednog
+lista (tj. koji imaju barem jedan list kao direktnog potomka).
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+
+struct tree {
+	int broj;
+	struct tree* levi, * desni;
+};
+
+tree* createTree(int broj) {
+	tree* pom = new tree();
+	pom->broj = broj;
+	pom->desni = pom->levi = nullptr;
+	return pom;
+}
+
+tree* insert(tree* cvor, int broj) {
+	if (cvor == nullptr) {
+		tree* pom = createTree(broj);
+		cvor = pom;
+		return cvor;
+	}
+	if (rand() % 2 == 1) {
+		cvor->levi = insert(cvor->levi, broj);
+	}
+	else {
+		cvor->desni = insert(cvor->desni, broj);
+	}
+	return cvor;
+}
+
+
+tree* pisiFajl(string fajl) {
+	ifstream f(fajl);
+	int n;
+	f >> n;
+	tree* pom = nullptr;
+
+	for (int i = 0; i < n; i++)
+	{
+		int broj;
+		f >> broj;
+		pom = insert(pom, broj);
+	}
+	f.close();
+	return pom;
+}
+
+int LVeceD(tree* cvor,int& broj) {//	ja sam se izjebao i izracunao lokalno umesto celo podstablo aaaaaaaa
+	if (cvor == nullptr)return 0;
+
+	if (cvor->levi != nullptr && cvor->desni!= nullptr) {
+		return cvor->broj + cvor->desni->broj + cvor->levi->broj;
+	}
+	
+	if (cvor->levi == nullptr) {
+		return cvor->broj + cvor->desni->broj;
+	}
+
+	if (cvor->desni == nullptr) {
+		return cvor->broj + cvor->levi->broj;
+	}
+
+	int sumL = LVeceD(cvor->levi, broj);
+	int sumD = LVeceD(cvor->desni, broj);
+
+	if (sumL > sumD) ++broj;
+
+	return 0;
+}
+
+
+int uporedi(tree* cvor, int& broj) { //	ovako se zapravo radi jebem ti zivot cu se ubijem
+	if (cvor == nullptr) return 0;	//	brate i dalje mi nije jasno sto ovo radi ovako mrziim rekurziju AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+	int sumL = uporedi(cvor->levi, broj);
+	int sumD = uporedi(cvor->desni, broj);
+
+	if (sumL > sumD) ++broj;
+
+	return sumL + sumD + cvor->broj;
+}
+
+//	129. zadatak mrzi me da pravim nov 
+void brojlistova(tree* cvor, int& broj) {
+	if (cvor == nullptr)return;
+
+	if ((cvor->levi!=nullptr && cvor->levi->levi == nullptr && cvor->levi->desni == nullptr) || (cvor->desni!=nullptr && cvor->desni->levi == nullptr && cvor->desni->desni == nullptr)) ++broj;
+	brojlistova(cvor->levi, broj);
+	brojlistova(cvor->desni, broj);
+
+}
+
+void ispisiStablo(tree* cvor, int razmak = 0, int dubina = 5) {
+	if (cvor == nullptr) return;
+
+	razmak += dubina;
+
+	// Prvo ispisujemo desno podstablo
+	ispisiStablo(cvor->desni, razmak);
+
+	// Ispis trenutnog cvora
+	cout << endl;
+	for (int i = dubina; i < razmak; i++)
+		cout << " ";
+	cout << cvor->broj << "\n";
+
+	// Onda levo podstablo
+	ispisiStablo(cvor->levi, razmak);
+
+}
+
+int main() {
+	tree* stablo = pisiFajl("ulaz.txt");
+	int broj = 0;
+	ispisiStablo(stablo);
+	LVeceD(stablo, broj);
+	cout << broj;
+	return 0;
+}
+
+Kažemo da je čvor p binarnog stabla zajednički predak čvorova u i v ako je p
+istovremeno predak čvora u i predak čvora v. Čvor np je najbliži predak od u i v
+ako od svih njihovih zajedničkih predaka upravo np ima najveću visinu. Napišite
+funkciju node np(BTREE T, node u, node v) koja vraća ime najbližeg pretka čvorova
+u i v. U primeru desno, čvorovi a i c su zajednički pretci čvorova f i e - ali kako c
+ima veću visinu, on je najbliži predak.
+
+136. Udaljenost čvorova u i v računamo kao broj grana koji treba preći na putu koji
+spaja u i v. Napišite funkciju int udalj(BTREE T, node u, node v)
+koja vraća udaljenost čvorova u i v u stablu T.
+
+137. Kažemo da je čvor v binarnog stabla T k-potomak čvora u ako se v nalazi u
+podstablu od T kojem je u koren i pri tome je nivo čvora v za k veći od nivoa čvora
+u. Tako su npr. deca nekog čvora njegovi 1-potomci, deca od dece 2-potomci, itd.
+Napišite funkciju sa prototipom
+labeltype potomak(BTREE T, int k)
+koja vraća label onog čvora binarnog stabla T koji ima najviše k-potomaka. Ako
+ima više takvih čvorova, vratite labelu bilo kojeg. Funkcija treba biti nezavisna o
+implementaciji atp-a BTREE; ne smete koristiti pomoćne atp-ove. Možete
+definisati pomoćne funkcije i globalne promenljive. U primeru na slici, uzmimo da
+je k = 2. Čvor a ima dvoje 2-potomaka, a čvor c jednog; kako ostali čvorovi
+nemaju 2-potomaka, funkcija treba vratiti a.
+
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+
+struct tree {
+	int broj;
+	struct tree* levi, * desni;
+};
+
+tree* createTree(int broj) {
+	tree* pom = new tree();
+	pom->broj = broj;
+	pom->desni = pom->levi = nullptr;
+	return pom;
+}
+
+tree* insert(tree* cvor, int broj) {
+	if (cvor == nullptr) {
+		return createTree(broj);
+	}
+
+	if (cvor->broj < broj) {
+		cvor->desni = insert(cvor->desni, broj);
+	}
+	else {
+		cvor->levi = insert(cvor->levi, broj);
+	}
+	return cvor;
+}
+// mnogo glup zadatak zbunjujuc al se lako pise
+tree* np(tree* cvor, tree* u, tree* v) {
+
+	if (cvor == nullptr) return nullptr;
+
+	if (cvor == u || cvor == v) return cvor;	//	ovo je logicno vracamo cvor u ili v ako smo ga nasli da bi ga zapamtili ide u cvorL ili cvorD
+
+	tree* cvorL = np(cvor->levi, u, v);
+	tree* cvorD = np(cvor->desni, u, v);
+
+	if (cvorL != nullptr && cvorD != nullptr) return cvor;	//	kad nadjemo oba cvora i u i v u cvorD i L mi necemo odma ovde da odemo vec ce mora jos jedna rekurzija da se sedi
+															//	i idemo nazad i ako mi imamo obe vrednosti vracamo taj cvor i on je najblizi roditelj kurca palca
+															//	ovo vazi isto dal imaju isti roditeljski cvor ili su na drugi kontinent to im je najblizi ako me chatGPT nije lagao
+
+	if (cvorL != nullptr) return cvorL;	//	moramo da vracamo ovo ako imamo cvorL kakose ne bi izgubio u rekurziji
+	if (cvorD != nullptr) return cvorD;	//	isto vazi i za njega pa ako imamo oba ce se desi gornja if petlja 
+
+	return nullptr;	//	ako nismo nasli cvor koji trebamo vracamo nullptr
+}
+
+tree* find(tree* cvor, int broj) {
+	if (cvor == nullptr)return nullptr;
+	if (cvor->broj == broj)return cvor;
+
+	tree* fl = find(cvor->levi, broj);
+	if (fl != nullptr)return fl;
+
+	return find(cvor->desni, broj);
+}
+
+//zadatak 136 zahteva deo od 135
+
+int rastojanje(tree* cvor, tree* u,int broj=0) { //	ovo radi jer kada ide rekurzivno nazad broj ostaje velicine koje je bio u tom pozivu pa zato nemamo neku netacnu vrednost
+	if (cvor == nullptr)return -1;
+
+	if (cvor == u) return broj;
+	int pom = rastojanje(cvor->levi, u, broj+1);
+	if (pom != -1)return pom;
+
+	return rastojanje(cvor->desni, u, broj+1);
+}
+
+int udaljenost(tree* cvor, tree* u, tree* v) {
+
+	tree* pom = np(cvor, u, v);
+	int br1 = rastojanje(pom, u);
+	int br2 = rastojanje(pom, v);
+	return br1 + br2;
+}
+
+
+//	zadatak 137
+//	mnogo sam glup mrzim sebe cu se ubije mnista ne znam osim da budem glup i ne znam da radim zadaci i pravim greske na svaki zadatak ocu da budem jutjuber
+int maxBroj = 0;
+int maxLabela = -1;
+
+int brojnaNivou(tree* cvor, int k) {
+	if (cvor == nullptr) return 0;
+	if (k == 0)return 1;
+	return brojnaNivou(cvor->levi, k) + brojnaNivou(cvor->desni, k);
+}
+
+void traziNPotomka(tree* cvor,int k) {
+	if (cvor == nullptr) return;
+
+	int broj = brojnaNivou(cvor, k);
+	if (broj > maxBroj) {
+		maxBroj = broj;
+		maxLabela = cvor->broj;
+	}
+	traziNPotomka(cvor->levi, k);
+	traziNPotomka(cvor->desni, k);
+
+}
+
+int potomak(tree* cvor,int k) {	//	koristimo ovu u program jer ne bi mogli vise puta da koristimo gornju funkciju zbog globalne promenljive
+	maxBroj = 0;
+	maxLabela = -1;
+
+	traziNPotomka(cvor, k);
+	return maxLabela;
+}
+
+int main() {
+
+	tree* stablo = createTree(20);
+	insert(stablo, 10);
+	insert(stablo, 15);
+	insert(stablo, 5);
+	insert(stablo, 1);
+	insert(stablo, 25);
+	insert(stablo, 30);
+	insert(stablo, 21);
+
+	tree* u = find(stablo, 15);
+	tree* v = find(stablo, 5);
+
+	tree* pom = np(stablo, u, v);
+	cout << pom->broj << " Ovo je kurac palac" << endl;
+
+	cout << udaljenost(stablo, u, v) << " ovo je udaljenost izmedju u i v";
+	return 0;
+}
+
+
+
+ U binarno stablo smeštaju se celobrojni podaci (int) u intervalu [1, X]. Napisati
+funkciju koja će u stablo dodati novi element (ali samo ako on u stablu već ne
+postoji). Napisati drugu funkciju koja će elemente zadanog stabla ispisati na ekran
+od najmanjeg prema najvećem. Napisati glavni program u kojem će se slučajno
+generisati 20 brojeva u intervalu [1, X]. Koristeći prvu napisanu funkciju, tako
+dobijene brojeve upisati u binarno stablo. Pomoću druge napisane funkcije ispisati
+sve elemente stabla.
+
+ U binarno stablo smeštaju se celobrojni podaci (int) u intervalu [1, X] (gde X
+prestavlja zbir cifara vašeg matičnog broja - JMBG). Napisati funkciju koja će u
+stablo dodati novi element (ali samo ako on u stablu već ne postoji). Napisati
+drugu funkciju koja će za zadato stablo izračunati najveću dubinu. Napisati glavni
+program u kojem slučajno generisati 20 brojeva u intervalu [1, X]. Koristeći prvu
+napisanu funkciju, tako dobijene brojeve upisati u binarno stablo. Pomoću druge
+napisane funkcije izračunati i ispisati najveću dubinu stabla
+138 - 143
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+using namespace std;
+
+struct tree {
+	int broj;
+	struct tree* levi, * desni;
+};
+
+tree* createTree(int broj) {
+	tree* pom = new tree();
+	pom->broj = broj;
+	pom->levi = pom->desni = nullptr;
+	return pom;
+}
+
+bool searchTree(tree* cvor, int broj) {
+	if (cvor == nullptr) return false;
+	if (cvor->broj == broj) return true;
+
+	bool pom = searchTree(cvor->levi, broj);
+	if (pom != false)return pom;
+	return searchTree(cvor->desni, broj);
+}
+
+tree* insert(tree* cvor, int broj) {
+
+	if (searchTree(cvor, broj) == false) {
+
+	if (cvor == nullptr)  return createTree(broj);
+
+	if (rand() % 2 == 1) {
+
+		cvor->levi = insert(cvor->levi, broj);
+	} else {
+		cvor->desni = insert(cvor->desni, broj);
+	}
+
+	} else {
+		return cvor;
+	}
+
+	return cvor;
+}
+
+ struct node{
+	int br;
+	struct node* sledeci;
+};
+
+ node* createNode(int broj) {
+	 node* pom = new node();
+	 pom->br = broj;
+	 pom->sledeci = nullptr;
+	 return pom;
+ }
+
+ bool postojiBroj(node* head, int broj) {
+	 node* pom = head;
+	 while (pom != nullptr) {
+		 if (pom->br == broj) return true;
+		 pom = pom->sledeci;
+	 }
+	 return false;
+ }
+	
+ node* insertNode(node* head, int broj) {
+	 if (postojiBroj(head, broj) == true) return head;
+
+	 if (head == nullptr) {
+		 return createNode(broj);
+	 }
+	 node* pom = head;
+	 node* prosla = nullptr;
+
+	 while (pom != nullptr && broj > pom->br ) {
+		 prosla = pom;
+		 pom = pom->sledeci;
+	 }
+	 node* p = createNode(broj);
+
+	 if (prosla == nullptr) {
+		 p->sledeci = head;
+		 return p;
+	 }
+
+	 prosla->sledeci = p;
+	 p->sledeci = pom;
+	 return head;
+ }
+
+ void ispisiNode(node* head) {
+	 node* pom = head;
+	 while (pom != nullptr) {
+		 cout << pom->br << " ";
+		 pom = pom->sledeci;
+	 }
+ }
+
+
+ // 139 zadatak deo za dubinu ko ce se jebe sa JMBG i maticni broj
+
+ int maxDubina = 1; // krecemo od cvor pa je maxDubina 1
+
+ void stabloDubina(tree* cvor, int dubina =0) {
+	 if (cvor == nullptr) return;
+
+	 if (maxDubina < dubina) maxDubina = dubina;
+	 stabloDubina(cvor->levi, dubina + 1);
+	 stabloDubina(cvor->desni, dubina + 1);
+ }
+
+ int stabloDubinaGlavno(tree* cvor) {
+	 maxDubina = 1;
+	 stabloDubina(cvor);
+	 return maxDubina;
+ }
+
+
+
+ //	140 zadatak opet ista sljakaaa
+
+ int treeSize(tree* cvor) {
+	 if (cvor == nullptr) return 0;
+	 
+	 return 1 + treeSize(cvor->levi) + treeSize(cvor->desni);
+ }
+
+ float prosecnaVrednost(tree* cvor, node* head) {
+	 node* pom = head;
+	 int broj = 0;
+	 while (pom != nullptr) {
+		 broj += pom->br;
+		 pom = pom->sledeci;
+	 }
+	 return (float)broj / treeSize(cvor);
+ }
+
+ // 141. - ispisujemo elemente stabla koji su tog nivoa
+
+ void NivoStabla(tree* cvor, int k) {
+	 if (cvor == nullptr) return;
+	 
+	 if (k == 0) {
+		 cout << cvor->broj << " ";
+		 return;
+	 }
+	 NivoStabla(cvor->levi, k-1);
+	 NivoStabla(cvor->desni, k-1);
+ }
+
+ //	142 zadatak tog broja - ispisujemo listove stabla
+ void ispisiList(tree* cvor) {
+	 if (cvor == nullptr)return;
+	 if (cvor->levi == nullptr && cvor->desni == nullptr) {
+		 cout << cvor->broj << " ";
+		 return;
+	 }
+	 ispisiList(cvor->levi);
+	 ispisiList(cvor->desni);
+	}
+
+
+ //143 zadatak kreiramo kopiju stabla
+
+ tree* kopija(tree* cvor) {
+	 if (cvor == nullptr) return nullptr;
+
+	 tree* nov = new tree();
+	 nov->broj = cvor->broj;
+	 nov->levi = kopija(cvor->levi);
+	 nov->desni = kopija(cvor->desni);
+
+	 return nov;
+ }
+
+ int main() {
+	 srand(time(0));
+	 tree* stablo = nullptr;
+	 node* head = nullptr;
+
+	 for (int i = 0; i < 20;i++) {
+		 int broj = rand() % 30;
+		 stablo =insert(stablo, broj);
+		 head =insertNode(head, broj);
+	 }
+	 ispisiNode(head);
+
+	 cout << endl;
+	 NivoStabla(stablo, 0);
+	 cout << endl;
+	 NivoStabla(stablo, 1);
+	 cout << endl;
+	 NivoStabla(stablo, 2);
+	 cout << endl;
+	 NivoStabla(stablo, 3);
+	 cout << endl;
+	 NivoStabla(stablo, 4);
+	 cout << endl;
+
+	return 0;
+}
+
+
+
+145. Nesortirano binarno stablo sadrži podatke o artiklima (naziv i cenu) i zadato je
+sledećom strukturom:typedef struct
+{
+char naziv[20];
+int cena;
+} Element;
+struct cv
+{
+Element element;
+struct cv* levo, * desno;
+};
+typedef struct cv Cvor;
+
+Napisati funkciju čiji je prototip cvor *trazi(Cvor *koren, char *naziv);
+Funkcija treba da vrati pokazivač na čvor koji sadrži artikl s navedenim nazivom ili
+NULL ukoliko navedeni artikl ne postoji u stablu. Nije dozvoljeno koristiti globalne
+promenljive. Napraviti metode za pravljenje ovakvog stabla kao i test program koj će
+omogućiti učitavanje elemenata, pravljenje stabla i traženje zadatog elementa.
+
+
+#include <iostream>
+#include <fstream>
+#include <cstring>
+#include <cstdlib>
+using namespace std;
+
+struct element {
+	char naziv[20];
+	int cena;
+};
+
+struct cvor {
+	element element;
+	struct cvor* levi,* desni;
+};
+
+cvor* createCvor(char naziv[20], int cena) {
+	cvor *pom = new cvor();
+	pom->element.cena = cena;
+	strcpy_s(pom->element.naziv,20, naziv);
+	pom->desni = pom->levi = nullptr;
+	return pom;
+}
+
+cvor* insert(cvor* cvor, char naziv[20], int cena) {
+	if (cvor == nullptr) {
+		return createCvor(naziv, cena);
+	}
+	if (rand() % 2 == 1) {
+		cvor->desni = insert(cvor->desni, naziv, cena);
+	}
+	else {
+		cvor->levi = insert(cvor->levi, naziv, cena);
+	}
+	return cvor;
+}
+
+cvor* pisiizFajl(string filename) {
+	fstream f(filename);
+	if (!f) {
+		cout << "GRESKA FAJL NIJE OTVOREN" << endl;
+		return nullptr;
+	}
+	int n;
+	f >> n;
+	cvor* pom = nullptr;
+	for (int i = 0; i < n; i++)
+	{
+		char artikal[20];
+		int cena;
+		f >> artikal >> cena;
+		pom = insert(pom, artikal, cena);
+	}
+	f.close();
+	return pom;
+}
+
+cvor* trazi(cvor* glava, char* naziv) {
+	if (glava == nullptr) return nullptr;
+
+	if (strcmp(glava->element.naziv, naziv) == 0) return glava;
+
+	cvor* pom1 = trazi(glava->levi, naziv);
+	if (pom1 != nullptr) return pom1;
+
+	return trazi(glava->desni, naziv);
+}
+
+
+int traziint(cvor* glava, char* naziv) {
+	if (glava == nullptr)return 0;
+
+	if (strcmp(glava->element.naziv, naziv) == 0)return 1;
+
+	int pom = traziint(glava->levi, naziv);
+	if (pom != 0)return pom;
+
+	return traziint(glava->desni, naziv);
+}
+
+int sviVeciOdN(cvor* glava, int n) {
+	if (glava == nullptr) return 1; 
+
+	if (glava->element.cena >= n) return 0; //	ako je manje odma vracamo 0 inace nastavljamo dalje u program da gledamo
+
+	return sviVeciOdN(glava->levi, n) && sviVeciOdN(glava->desni, n);
+}
+
+
+int max_cena(cvor* glava) {
+	if (glava == nullptr) return -10000;
+	int max = glava->element.cena;
+
+	int maxL = max_cena(glava->levi);
+	int maxD = max_cena(glava->desni);
+
+	if (maxL > max) {
+		max = maxL;
+	}
+	if (maxD > max) {
+		max = maxD;
+	}
+
+	return max;
+	}
+
+int ukupna_cena(cvor* glava) {
+	if (glava == nullptr) return 0;
+
+	int broj = glava->element.cena;
+
+	int brojl = ukupna_cena(glava->levi);
+	int brojd = ukupna_cena(glava->desni);
+
+	broj += brojl + brojd;
+
+	return broj;
+}
+
+void ispis_po_nivou(cvor* glava, int nivo) {
+	if (glava == nullptr) return;
+
+	if (nivo == 0) cout << glava->element.cena<< " " << glava->element.naziv << endl; //	mozes da stavis return ovde da bi bio vise optimizovan jer ti se tu fakticni zavrsava pregled
+
+	ispis_po_nivou(glava->levi, nivo - 1);
+	ispis_po_nivou(glava->desni, nivo - 1);
+}
+
+
+cvor* obrni(cvor* glava) {
+	if (glava->desni != nullptr && glava->levi != nullptr) {
+		cvor* pom = glava->desni;
+		glava->desni = glava->levi;
+		glava->levi = pom;
+	}
+	return glava;
+}
+
+cvor* ogledaloStablo(cvor* glava) {
+	if (glava == nullptr) return nullptr;
+
+	glava = obrni(glava);
+
+	glava->levi = ogledaloStablo(glava->levi);
+	glava->desni = ogledaloStablo(glava->desni);
+	return glava;
+}
+
+int main() {
+	srand(time(0));
+	char rec[20] = "Sir";
+	char rec2[20] = "Kurac";
+	cvor* stablo = pisiizFajl("fajl.txt");
+	cvor* vrati = trazi(stablo,rec);
+	if (vrati != nullptr)
+		cout << vrati->element.naziv << " " << vrati->element.cena << endl;
+	else cout <<" nemamo fajl";
+
+	int broj = traziint(stablo, rec2);
+	cout << broj << endl;
+	return 0;
+}
+
+
+153. Napišite funkciju u C++ koja će prebrojati sve čvorove stabla na najvećem nivou
+stabla. Nakon toga napišite program kojim se proverava rad funkcije. Neka je
+stablo dato u datoteci ulaz.txt, gde je u prvom redu dat broj čvorova stabla n, a u
+ostalih n redova po jedan element stabla.
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+
+struct tree {
+	int broj;
+	struct tree* levo, * desno;
+};
+
+tree* insert(tree* cvor,int broj) {
+	if (cvor == nullptr) {
+		tree* pom = new tree();
+		pom->broj = broj;
+		pom->desno = pom->levo = nullptr;
+		return pom;
+	}
+
+	if (rand() % 2 == 1) {
+		cvor->levo = insert(cvor->levo, broj);
+	}
+	else {
+		cvor->desno = insert(cvor->desno, broj);
+	}
+	return cvor;
+}
+
+tree* citajFajl(string fajl) {
+	ifstream f(fajl);
+	if (!f) {
+		cout << "NE MOZEMO OTVORITI FAJL" << endl;
+		return nullptr;
+	}
+
+	int n;
+	f >> n;
+	tree* pom = nullptr;
+
+	for (int i = 0; i < n; i++)
+	{
+		int broj;
+		f >> broj;
+		insert(pom, broj);
+	}
+	f.close();
+
+	return pom;
+}
+
+int maxDubina = 0;
+
+void najveca_dubinu(tree* cvor,int dubina=0) {
+	if (cvor == nullptr) return;
+
+	if (maxDubina < dubina) maxDubina = dubina;
+
+	najveca_dubinu(cvor->levo, dubina + 1);
+	najveca_dubinu(cvor->desno, dubina + 1);
+}
+
+int stabloDubinaGlavno(tree* cvor) {
+	maxDubina = 0;
+	najveca_dubinu(cvor);
+	return maxDubina;
+}
+int broj_elemenata = 0;
+
+void prebroj_elemente(tree* cvor,int maxdubina, int dubina=0) {
+	if (cvor == nullptr)return;
+
+	if (maxdubina == dubina) broj_elemenata++;
+
+	prebroj_elemente(cvor->levo, maxdubina,dubina+1);
+	prebroj_elemente(cvor->desno, maxdubina,dubina+1);
+}
+
+int preboj_sve_elemente(tree* cvor) {
+	int broj_dubine = stabloDubinaGlavno(cvor);
+	broj_elemenata = 0;
+
+	prebroj_elemente(cvor, broj_dubine);
+	return broj_elemenata;
+}
+
+int main() {
+	//mrzi me da pisem proveru chatgpt reko da valja
+
+	return 0;
+}
+
+
+154. U programskom jeziku C++ napisati funkciju koja će za dva zadata binarna stabla
+proveriti da li skup elemenata prvog stabla predstavlja podskup skupa elemenata
+drugog stabla. U datotekama ulaz1.txt i ulaz2.txt se nalazi u prvom redu broj
+elemenata, a u narednim redovima celi brojevi. Od ovih podataka formirati dva
+balansirana binarna stabla pretrage i proveriti da li skup elemenata prvog stabla
+predstavlja podskup elemenata drugog stabla.
+
+
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+using namespace std;
+
+struct tree {
+    int broj;
+    tree* levi, * desni;
+};
+
+tree* insert(tree* cvor, int broj) {
+    if (cvor == nullptr) {
+        tree* pom = new tree();
+        pom->broj = broj;
+        pom->desni = pom->levi = nullptr;
+        return pom;
+    }
+    if (broj > cvor->broj) {
+        cvor->desni = insert(cvor->desni, broj);
+    }
+    else {
+        cvor->levi = insert(cvor->levi, broj);
+    }
+    return cvor;
+}
+
+int size(tree* cvor) {
+    if (cvor == nullptr) return 0;
+    return 1 + size(cvor->levi) + size(cvor->desni);
+}
+
+int maxbroj(tree* cvor) {
+    while (cvor->desni != nullptr) cvor = cvor->desni;
+    return cvor->broj;
+}
+
+int minbroj(tree* cvor) {
+    while (cvor->levi != nullptr) cvor = cvor->levi;
+    return cvor->broj;
+}
+
+tree* obrisiNodeUredjeno(tree* cvor, int broj) {
+    if (cvor == nullptr) return nullptr;
+
+    if (broj < cvor->broj) {
+        cvor->levi = obrisiNodeUredjeno(cvor->levi, broj);
+    }
+    else if (broj > cvor->broj) {
+        cvor->desni = obrisiNodeUredjeno(cvor->desni, broj);
+    }
+    else {
+        if (cvor->levi == nullptr) {
+            tree* pom = cvor->desni;
+            delete cvor;
+            return pom;
+        }
+        else if (cvor->desni == nullptr) {
+            tree* pom = cvor->levi;
+            delete cvor;
+            return pom;
+        }
+        else {
+            int m = minbroj(cvor->desni);
+            cvor->broj = m;
+            cvor->desni = obrisiNodeUredjeno(cvor->desni, m);
+        }
+    }
+    return cvor;
+}
+
+tree* balansirajUredjeno(tree* koren) {
+    if (koren == nullptr) return nullptr;
+
+    int k = size(koren->levi) - size(koren->desni);
+
+    for (; k > 1; k -= 2) {
+        koren->desni = insert(koren->desni, koren->broj);
+        koren->broj = maxbroj(koren->levi);
+        koren->levi = obrisiNodeUredjeno(koren->levi, koren->broj);
+    }
+
+    for (; k < -1; k += 2) {
+        koren->levi = insert(koren->levi, koren->broj);
+        koren->broj = minbroj(koren->desni);
+        koren->desni = obrisiNodeUredjeno(koren->desni, koren->broj);
+    }
+
+    koren->levi = balansirajUredjeno(koren->levi);
+    koren->desni = balansirajUredjeno(koren->desni);
+
+    return koren;
+}
+
+tree* citajFajl(string fajl) {
+    ifstream f(fajl);
+    if (!f) {
+        cout << "NE MOZEMO OTVORITI FAJL" << endl;
+        return nullptr;
+    }
+
+    int n;
+    f >> n;
+    tree* pom = nullptr;
+
+    for (int i = 0; i < n; i++) {
+        int broj;
+        f >> broj;
+        pom = insert(pom, broj); // ovde je bio problem, mora se dodeliti
+    }
+    f.close();
+
+    pom = balansirajUredjeno(pom);
+    return pom;
+}
+
+bool search(tree* cvor, int broj) {
+    if (cvor == nullptr) return false;
+    if (cvor->broj == broj) return true;
+    if (cvor->broj > broj)
+        return search(cvor->levi, broj);
+    return search(cvor->desni, broj);
+}
+
+bool podskup(tree* cvor, tree* cvor2) {
+    if (cvor == nullptr) return true;
+    if (!search(cvor2, cvor->broj)) return false;
+    return podskup(cvor->levi, cvor2) && podskup(cvor->desni, cvor2);
+}
+
+int main() {
+    tree* stablo1 = citajFajl("ulaz1.txt");
+    tree* stablo2 = citajFajl("ulaz2.txt");
+
+    if (podskup(stablo1, stablo2)) {
+        cout << "PRVO STABLO JE PODSKUP DRUGOG" << endl;
+    }
+    else {
+        cout << "PRVO STABLO NIJE PODSKUP DRUGOG" << endl;
+    }
+
+    return 0;
+}
+
+
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+// 1. struktura
+struct node {
+    int broj;
+    node* levi, * desni;
+};
+
+// 2. funkcija insert
+node* insert(node* koren, int broj) {
+    if (koren == nullptr) {
+        node* novi = new node();
+        novi->broj = broj;
+        novi->levi = novi->desni = nullptr;
+        return novi;
+    }
+    if (broj < koren->broj) {
+        koren->levi = insert(koren->levi, broj);
+    } else {
+        koren->desni = insert(koren->desni, broj);
+    }
+    return koren;
+}
+
+// pomocna funkcija za citanje niza iz fajla
+int* citajFajl(string ime, int &n) {
+    ifstream f(ime);
+    if (!f) {
+        cout << "Greska pri otvaranju fajla!" << endl;
+        n = 0;
+        return nullptr;
+    }
+    f >> n;
+    int* niz = new int[n];
+    for (int i = 0; i < n; i++) {
+        f >> niz[i];
+    }
+    f.close();
+    return niz;
+}
+
+// 4. sortiranje niza (bubble sort radi jednostavnosti)
+void sort(int* niz, int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (niz[j] > niz[j + 1]) {
+                int tmp = niz[j];
+                niz[j] = niz[j + 1];
+                niz[j + 1] = tmp;
+            }
+        }
+    }
+}
+
+// 5. formiranje balansiranog BST iz sortiranog niza
+node* napraviBalansirano(int* niz, int l, int d) {
+    if (l > d) return nullptr;
+    int mid = (l + d) / 2;
+    node* koren = new node();
+    koren->broj = niz[mid];
+    koren->levi = napraviBalansirano(niz, l, mid - 1);
+    koren->desni = napraviBalansirano(niz, mid + 1, d);
+    return koren;
+}
+
+// 6. pretraga u BST
+bool search(node* koren, int broj) {
+    if (koren == nullptr) return false;
+    if (koren->broj == broj) return true;
+    if (broj < koren->broj) return search(koren->levi, broj);
+    return search(koren->desni, broj);
+}
+
+// 7. provera podskupa
+bool podskup(node* stablo1, node* stablo2) {
+    if (stablo1 == nullptr) return true;
+    if (!search(stablo2, stablo1->broj)) return false;
+    return podskup(stablo1->levi, stablo2) && podskup(stablo1->desni, stablo2);
+}
+
+// inorder ispis (da se vidi balansirano stablo)
+void inorder(node* koren) {
+    if (koren == nullptr) return;
+    inorder(koren->levi);
+    cout << koren->broj << " ";
+    inorder(koren->desni);
+}
+
+int main() {
+    int n1, n2;
+    int* niz1 = citajFajl("ulaz1.txt", n1);
+    int* niz2 = citajFajl("ulaz2.txt", n2);
+
+    sort(niz1, n1);
+    sort(niz2, n2);
+
+    node* stablo1 = napraviBalansirano(niz1, 0, n1 - 1);
+    node* stablo2 = napraviBalansirano(niz2, 0, n2 - 1);
+
+    cout << "Prvo stablo (inorder): ";
+    inorder(stablo1);
+    cout << endl;
+
+    cout << "Drugo stablo (inorder): ";
+    inorder(stablo2);
+    cout << endl;
+
+    if (podskup(stablo1, stablo2)) {
+        cout << "Prvo stablo jeste podskup drugog." << endl;
+    } else {
+        cout << "Prvo stablo NIJE podskup drugog." << endl;
+    }
+
+    delete[] niz1;
+    delete[] niz2;
+    return 0;
+}
+
+
+155. Elementi binarnog stabla su dati u datoteci, na standardni način. Elemente
+dodavati u stablo u redosledu u kojem su dati u ulaznoj datoteci, slučajnim
+izborom levog ili desnog podstabla u koje se smešta element. Pronaći najveći
+element u stablu, štampati na standardni izlaz sam najveći element i njegovog
+roditelja. Ako je najveći element koren stabla, za roditelja odštampati “NULL”.
+
+#include <iostream>
+#include <fstream>
+
+
+//MALO GLUP ZADATAK OBRATI PAZNJU NA NJEGA!
+using namespace std;
+
+struct tree {
+	int broj;
+	tree* levi, * desni;
+};
+
+tree* insert(tree* cvor, int broj) {
+	if (cvor == nullptr) {
+		tree* pom = new tree();
+		pom->broj = broj;
+		pom->desni = pom->levi = nullptr;
+		return pom;
+	}
+	if (broj > cvor->broj) {
+		cvor->desni = insert(cvor->desni, broj);
+	}
+	else {
+		cvor->levi = insert(cvor->levi, broj);
+	}
+	return cvor;
+}
+
+tree* citajFajl(string fajl) {
+	ifstream f(fajl);
+	if (!f) {
+		cout << "NE MOZEMO OTVORITI FAJL" << endl;
+		return nullptr;
+	}
+
+	int n;
+	f >> n;
+	tree* pom = nullptr;
+
+	for (int i = 0; i < n; i++)
+	{
+		int broj;
+		f >> broj;
+		insert(pom, broj);
+	}
+	f.close();
+
+	return pom;
+}
+
+
+bool nadji_max(tree* koren, int roditelj, int& max_broj, int& otac_max) {
+    if (koren == nullptr) return false;
+
+    if (koren->broj > max_broj) {
+        max_broj = koren->broj;
+        otac_max = roditelj;
+    }
+
+    
+    nadji_max(koren->levi, koren->broj, max_broj, otac_max);
+    nadji_max(koren->desni, koren->broj, max_broj, otac_max);
+
+    return true;
+}
+
+void ispis(tree* koren) {
+	int max_broj = -10000;
+	int otac_max = -1;
+
+
+	nadji_max(koren, -1, max_broj, otac_max);
+
+	if (max_broj == otac_max) {
+		cout << max_broj << " NULLPTR" << endl;
+	}
+	else {
+		cout << max_broj << " " << otac_max << endl;
+	}
+}
+
+
+156. Elementi binarnog stabla su dati u datoteci kao u prethodnom zadatku. Odrediti:
+a) maksimalnu dubinu stabla
+b) broj listova stabla
+c) broj čvorova koji se nalaze na i-tom nivou
+Rezultat štampati na standardni izlaz.
+
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
+
+struct tree {
+	int broj;
+	struct tree* levi, * desni;
+};
+
+
+tree* insert(tree* cvor, int broj) {
+
+	if (cvor == nullptr) {
+
+		tree* pom = new tree();
+		pom->broj = broj;
+		pom->levi = pom->desni = nullptr;
+		return pom;
+	}
+
+	if (rand() % 2 == 1)
+	{
+		cvor->levi = insert(cvor->levi, broj);
+	}
+	else
+	{
+		cvor->desni = insert(cvor->desni, broj);
+	}
+
+	return cvor;
+}
+
+
+tree* citajFajl(string fajl) {
+	ifstream f(fajl);
+	if (!f) {
+		cout << "NE MOZEMO OTVORITI FAJL" << endl;
+		return nullptr;
+	}
+
+	int n;
+	f >> n;
+	tree* pom = nullptr;
+
+	for (int i = 0; i < n; i++)
+	{
+		int broj;
+		f >> broj;
+		insert(pom, broj);
+	}
+	f.close();
+
+	return pom;
+}
+
+int dubina = 0;
+void max_nivo(tree* cvor, int broj = 0)
+{
+	if (cvor == nullptr)return;
+
+	if (broj > dubina) dubina = broj;
+
+	max_nivo(cvor->levi, broj + 1);
+	max_nivo(cvor->desni, broj + 1);
+
+}
+
+int dubina_stabla(tree* cvor) {
+
+	dubina = 0;
+	max_nivo(cvor);
+	return dubina;
+}
+
+
+
+int broj_listova(tree* cvor)
+{
+	if (cvor == nullptr) return 0;
+
+	if (cvor->levi == nullptr && cvor->desni == nullptr) return 1;
+
+	return broj_listova(cvor->levi) +broj_listova(cvor->desni);
+}
+
+int broj_cvorova_na_i(tree* cvor, int broj,int nivo=0) {
+	if (cvor == nullptr)return 0;
+
+	if (broj == nivo)return 1;
+
+	return broj_cvorova_na_i(cvor->levi, broj, nivo + 1) + broj_cvorova_na_i(cvor->desni, broj, nivo + 1);
+}
+
+
+int main(){
+
+
+	return 0;
+}
+
+
+
+157. Napisati C++ program koji će ispisati stablo po nivoima u obrnutom redosledu, od
+poslednjeg nivoa do prvog.
+
+
+#include <iostream>
+using namespace std;
+
+struct tree {
+    int broj;
+    tree* levi, * desni;
+};
+
+tree* noviCvor(int broj) {
+    tree* n = new tree();
+    n->broj = broj;
+    n->levi = n->desni = nullptr;
+    return n;
+}
+
+// visina stabla
+int visina(tree* cvor) {
+    if (cvor == nullptr) return 0;
+    int l = visina(cvor->levi);
+    int d = visina(cvor->desni);
+    return 1 + (l > d ? l : d);
+}
+
+// ispis svih čvorova na datom nivou
+void ispisiNaNivou(tree* cvor, int nivo) {
+    if (cvor == nullptr) return;
+    if (nivo == 0) {
+        cout << cvor->broj << " ";
+    } else {
+        ispisiNaNivou(cvor->levi, nivo - 1);
+        ispisiNaNivou(cvor->desni, nivo - 1);
+    }
+}
+
+// ispis od poslednjeg nivoa ka prvom
+void ispisiObrnuto(tree* koren) {
+    int h = visina(koren);
+    for (int i = h - 1; i >= 0; i--) {
+        ispisiNaNivou(koren, i);
+        cout << endl;
+    }
+}
+
+int main() {
+    // primer stabla
+    tree* root = noviCvor(1);
+    root->levi = noviCvor(2);
+    root->desni = noviCvor(3);
+    root->levi->levi = noviCvor(4);
+    root->levi->desni = noviCvor(5);
+    root->desni->desni = noviCvor(6);
+
+    cout << "Ispis po nivoima od poslednjeg ka prvom:" << endl;
+    ispisiObrnuto(root);
+
+    return 0;
+}
+
+
+159. Napisati program koji za n brojeva sa ulaza formira uređeno binarno stablo.
+Napisati funkciju koja određuje proizvod parnih brojeva iz čvorova. Ispisati
+dobijenu vrednost i čvorove binarnog stabla u nerastućem poretku.
+
+#include <iostream>
+using namespace std;
+
+// Struktura za čvor binarnog stabla
+struct Node {
+    int broj;
+    Node* levo;
+    Node* desno;
+};
+
+// Funkcija za kreiranje novog čvora
+Node* napraviCvor(int broj) {
+    Node* novi = new Node;
+    novi->broj = broj;
+    novi->levo = nullptr;
+    novi->desno = nullptr;
+    return novi;
+}
+
+// Ubacivanje u uređeno binarno stablo (BST)
+Node* ubaci(Node* koren, int broj) {
+    if (koren == nullptr) {
+        return napraviCvor(broj);
+    }
+    if (broj < koren->broj) {
+        koren->levo = ubaci(koren->levo, broj);
+    } else {
+        koren->desno = ubaci(koren->desno, broj);
+    }
+    return koren;
+}
+
+// Funkcija koja obilazi stablo i računa proizvod parnih brojeva
+void nadjiProizvodParnih(Node* koren, int &proizvod) {
+    if (koren == nullptr) return;
+
+    if (koren->broj % 2 == 0) {
+        proizvod *= koren->broj;
+    }
+
+    nadjiProizvodParnih(koren->levo, proizvod);
+    nadjiProizvodParnih(koren->desno, proizvod);
+}
+
+// Ispis stabla u nerastucem poretku (opadajuće)
+void ispisiOpadajuce(Node* koren) {
+    if (koren == nullptr) return;
+    ispisiOpadajuce(koren->desno);
+    cout << koren->broj << " ";
+    ispisiOpadajuce(koren->levo);
+}
+
+int main() {
+    int n;
+    cout << "Unesite broj elemenata: ";
+    cin >> n;
+
+    Node* koren = nullptr;
+    cout << "Unesite brojeve: ";
+    for (int i = 0; i < n; i++) {
+        int broj;
+        cin >> broj;
+        koren = ubaci(koren, broj);
+    }
+
+    int proizvod = 1; // neutralni element za množenje
+    nadjiProizvodParnih(koren, proizvod);
+
+    cout << "Proizvod parnih brojeva: " << proizvod << endl;
+
+    cout << "Cvorovi u nerastucem poretku: ";
+    ispisiOpadajuce(koren);
+    cout << endl;
+
+    return 0;
+}
+
+
+164.
+Data su dva uređena binarna stabla. Napisati program koji od elemenata ta
+dva stabla formira treće, takođe uređeno binarno stablo.
+
+
+#include <iostream>
+using namespace std;
+
+// 1. Struktura čvora
+struct node {
+    int broj;
+    node* levi, * desni;
+};
+
+// 2. Insert u BST
+node* insert(node* koren, int broj) {
+    if (koren == nullptr) {
+        node* novi = new node();
+        novi->broj = broj;
+        novi->levi = novi->desni = nullptr;
+        return novi;
+    }
+    if (broj < koren->broj) {
+        koren->levi = insert(koren->levi, broj);
+    } else {
+        koren->desni = insert(koren->desni, broj);
+    }
+    return koren;
+}
+
+// inorder obilazak – da bismo videli elemente
+void inorder(node* koren) {
+    if (koren == nullptr) return;
+    inorder(koren->levi);
+    cout << koren->broj << " ";
+    inorder(koren->desni);
+}
+
+// 3. Dodavanje svih čvorova iz jednog stabla u drugo
+void dodajSve(node* stablo, node*& trece) {
+    if (stablo == nullptr) return;
+    dodajSve(stablo->levi, trece);
+    trece = insert(trece, stablo->broj);
+    dodajSve(stablo->desni, trece);
+}
+
+// 4. Formiranje trećeg stabla
+node* spoji(node* stablo1, node* stablo2) {
+    node* trece = nullptr;
+    dodajSve(stablo1, trece);
+    dodajSve(stablo2, trece);
+    return trece;
+}
+
+int main() {
+    // prvo stablo
+    node* stablo1 = nullptr;
+    stablo1 = insert(stablo1, 5);
+    stablo1 = insert(stablo1, 3);
+    stablo1 = insert(stablo1, 7);
+
+    // drugo stablo
+    node* stablo2 = nullptr;
+    stablo2 = insert(stablo2, 4);
+    stablo2 = insert(stablo2, 6);
+    stablo2 = insert(stablo2, 8);
+
+    cout << "Prvo stablo (inorder): ";
+    inorder(stablo1);
+    cout << endl;
+
+    cout << "Drugo stablo (inorder): ";
+    inorder(stablo2);
+    cout << endl;
+
+    // treće stablo
+    node* stablo3 = spoji(stablo1, stablo2);
+
+    cout << "Trece stablo (inorder): ";
+    inorder(stablo3);
+    cout << endl;
+
+    return 0;
+}
+
+
+BFS algoritam
+
+
+#include <iostream>
+using namespace std;
+
+struct node {
+	int broj;
+	struct node* sledeci;
+
+};
+struct graph {
+	int v, e;
+	node** adj;
+};
+
+node* createNode(int broj) {
+	node* pom = new node;
+	pom->broj = broj;
+	pom->sledeci = nullptr;
+	return pom;
+}
+
+graph* createGraph(int cvor,int grana) {
+
+	graph* graf = new graph;
+	graf->e = grana;
+	graf->v = cvor;
+
+	graf->adj = new node*[graf->v];
+	for (int i = 0; i < graf->v; i++)
+	{
+		graf->adj[i] = nullptr;
+	}
+	int u, v;
+	for (int i = 0; i < graf->e; i++)
+	{
+		cout << "u v";
+		cin >> u >> v;
+		cout << endl;
+
+		node* pom = createNode(u);
+		pom->sledeci = graf->adj[v];
+		graf->adj[v] = pom;
+
+		pom = createNode(v);
+		pom->sledeci = graf->adj[u];
+		graf->adj[u] = pom;
+	}
+	return graf;
+}
+
+struct queue {
+	node* prednji;
+	node* zadnji;
+};
+
+queue* createQueue() {
+	queue* q = new queue;
+	q->prednji = q->zadnji = nullptr;
+	return q;
+}
+
+void enqueue(queue*& q,int broj) {
+	node* pom = new node;
+	pom->broj = broj;
+	pom->sledeci = nullptr;
+
+	if (q->prednji == nullptr) {
+		q->prednji = q->zadnji = pom;
+	}
+	else {
+		q->zadnji->sledeci = pom;
+		q->zadnji = pom;
+	}
+}
+
+bool isEmpty(queue* q) {
+	return q->prednji == nullptr;
+}
+
+int dequeue(queue*& q) {
+	if (isEmpty(q)) {
+		cout << "vec je prazan";
+		return 0;
+	}
+	node* pom = q->prednji;
+	int broj = pom->broj;
+	q->prednji = q->prednji->sledeci;
+
+	if (q->prednji == nullptr)q->zadnji = nullptr;
+
+	delete pom;
+	return broj;
+}
+
+void BFS(graph* graf, int broj) {
+	bool* posecen = new bool[graf->v];
+	for (int i = 0; i < graf->v; i++)
+	{
+		posecen[i] = false;
+	}
+
+	queue* q = createQueue();
+	enqueue(q, broj);
+	posecen[broj] = true;
+	
+	while (!isEmpty(q)) {
+		int tren = dequeue(q);
+		cout << tren << " ";
+
+		node* pom = graf->adj[tren];
+		while (pom != nullptr) {
+			int kom = pom->broj;
+			if (!posecen[kom]) {
+				posecen[kom] = true;
+				enqueue(q, kom);
+			}
+			pom = pom->sledeci;
+		}
+	}
+	delete[] posecen;
+}
+
+// BFS ZA MATRICU GRAF
+
+struct graf {
+	int v, e;
+	int** ad;
+};
+
+graf* createGraphM(int v, int e) {
+	graf* g = new graf;
+	g->v = v;
+	g->e = e;
+
+	g->ad = new int* [g->v];
+
+	for (int i = 0; i < v; i++) {
+		g->ad[i] = new int[v];
+		for (int j = 0; j < v; j++)
+			g->ad[i][j] = 0;
+	}
+	int u, v;
+	for (int i = 0; i < e; i++) {
+		cout << "Unesite granu (u v): ";
+		cin >> u >> v;
+		g->ad[u][v] = 1;
+		g->ad[v][u] = 1;
+	}
+	return g;
+}
+
+void BFSM(graf* g, int start) {
+
+	bool* posecen = new bool[g->v];
+	for (int i = 0; i < g->v; i++)
+	{
+		posecen[i] = false;
+	}
+	posecen[start] = true;
+	queue* q = createQueue();
+
+	enqueue(q, start);
+	while (!isEmpty(q) == true) {
+		int tren = dequeue(q);
+		cout << tren << " ";
+
+		for (int i = 0; i < g->v; i++)
+		{
+			if (g->ad[tren][i] == 1 && !posecen[i] == true) {
+				posecen[i] = true;
+				enqueue(q, i);
+			}
+		}
+	}
+	delete[] posecen;
+	delete q;
+
+	}
+
+
+
+DFS
+
+#include <iostream>
+using namespace std;
+
+struct node {
+	int broj;
+	struct node* sledeci;
+};
+
+struct graph {
+	int v, e;
+	node** adj;
+};
+
+node* createNode(int br) {
+	node* pom = new node;
+	pom->broj = br;
+	pom->sledeci = nullptr;
+	return pom;
+}
+
+graph* creteGraph(int cvorovi, int grane) {
+	graph* graf = new graph;
+	graf->e = grane;
+	graf->v = cvorovi;
+
+	graf->adj = new node * [graf->v];
+	for (int i = 0; i < graf->v; i++)
+	{
+		graf->adj[i] = nullptr;
+	}
+
+	int u, v;
+	
+	cout << "pisi (u v): ";
+	for (int i = 0; i < graf->e; i++)
+	{
+		
+		cin >> u >> v;
+		cout << endl;
+
+		node* pom = createNode(u);
+		pom->sledeci = graf->adj[v];
+		graf->adj[v] = pom;
+
+		pom = createNode(v);
+		pom->sledeci = graf->adj[u];
+		graf->adj[u] = pom;
+	}
+	return graf;
+}
+
+void DFS_travel(graph* graf, int start, bool* posecen) {
+	posecen[start] = true;
+	cout << start << " ";
+
+	node* pom = graf->adj[start];
+	while (pom != nullptr) {
+		int kom = pom->broj;
+		if (posecen[kom] == false) {
+			DFS_travel(graf, kom, posecen);
+		}
+		pom = pom->sledeci;
+	}
+}
+
+void DFS(graph* graf, int start) {
+	bool* posecen = new bool[graf->v];
+	for (int i = 0; i < graf->v; i++)
+	{
+		posecen[i] = false;
+	}
+	DFS_travel(graf, start, posecen);
+
+	delete[] posecen;
+	cout << endl;
+}
+
+struct graf {
+	int v, e;
+	int** ad;
+};
+
+
+//	DFS ali je za graf sa matricu napravljen
+
+graf* createGraphM(int v, int e) {
+	graf* g = new graf;
+	g->v = v;
+	g->e = e;
+	
+	g->ad = new int*[g->v];
+
+	for (int i = 0; i < v; i++) {
+		g->ad[i] = new int[v];
+		for (int j = 0; j < v; j++)
+			g->ad[i][j] = 0;
+	}
+	int u, v;
+	for (int i = 0; i < e; i++) {
+		cout << "Unesite granu (u v): ";
+		cin >> u >> v;
+		g->ad[u][v] = 1;
+		g->ad[v][u] = 1;
+	}
+		return g;
+}
+
+void DFS_travelm(graf* g, int start, bool* posecen) {
+	posecen[start] = true;
+	cout << start << " ";
+	 
+	for (int i = 0; i < g->v; i++)
+	{
+		if (g->ad[start][i] == 1 && posecen[i] == false) {
+			DFS_travelm(g, i, posecen);
+		}
+	}
+}
+
+void DFS_M(graf* g, int start) {
+
+	bool* posecen = new bool[g->v];
+	for (int i = 0; i < g->v; i++)
+	{
+		posecen[i] = false;
+	}
+	DFS_travelm(g, start, posecen);
+	delete[] posecen;
+}
+
+int main() {
+	int cvorovi, grane;
+	cout << "Unesi broj cvorova i grana: ";
+	cin >> cvorovi >> grane;
+
+	graph* graf = creteGraph(cvorovi, grane);
+
+	int start;
+	cout << "Pocetni cvor za DFS: ";
+	cin >> start;
+
+	DFS(graf, start);
+
+	return 0;
+}
+
+
+// graf list ne znam za koe ovo sluzi iskrenooo
+
+#include <iostream>
+using namespace std;
+
+
+struct list {
+	int indeks;
+	struct list* sledeci;
+};
+
+struct graph {
+	int v;
+	int e;
+	list** adj;
+};
+
+
+list* createList(int v) {
+	list* node = new list;
+	node->indeks = v;
+	node->sledeci = nullptr;
+	return node;
+}
+
+graph* createGraph() {
+	int u, v;
+
+	graph* graf = new graph;
+
+	cout << " broj cvorova: ";
+	cin >> graf->v;
+	cout << endl;
+
+	cout << "broj grana: ";
+	cin >> graf->e;
+	cout << endl;
+
+	graf->adj = new list*[graf->v];
+
+	for (int i = 0;i < graf->v;i++)
+	{
+		graf->adj[i] = nullptr;
+
+	}
+
+	for (int i = 0;i < graf->e;i++)
+	{
+		cout << "Ucitaj granu (u v): ";
+		cin >> u >> v;
+
+		list* pom = createList(v);
+		pom->sledeci = graf->adj[u];
+		graf->adj[u] = pom;
+
+		pom = createList(u);
+		pom->sledeci = graf->adj[v];
+		graf->adj[v] = pom;
+
+	}
+	return graf;
+}
+
+void printGraf(graph* graf) {
+
+	for (int i = 0;graf->v;i++) {
+		cout << "\nlista susedstva\n";
+		cout << i << +": ";
+		list* pom = graf->adj[i];
+		while (pom != nullptr) {
+			cout << pom->indeks << " ";
+			pom = pom->sledeci;
+		}
+		cout << endl;
+	}
+}
+
+void insertEdge(graph* graf, int v, int u) {
+	list* pom = createList(u);
+	pom->sledeci = graf->adj[v];
+	graf->adj[v] = pom;
+
+	pom = createList(v);
+	pom->sledeci = graf->adj[u];
+	graf->adj[u] = pom;
+
+	graf->e++;
+}
+
+void removeNode(list*& lista, int broj) {
+	list* pom = lista;
+	list* prosli = nullptr;
+
+	while (pom != nullptr && pom->indeks != broj) {
+		prosli = pom;
+		pom = pom->sledeci;
+	}
+
+	if (pom == nullptr)return;
+
+	if (prosli == nullptr) {
+		lista = pom->sledeci;
+	}
+	else {
+		prosli->sledeci = pom->sledeci;
+	}
+	delete pom;
+}
+
+void removeEdge(graph* graf, int u, int v) {
+	removeNode(graf->adj[u], v);
+	removeNode(graf->adj[v], u);
+	graf->e--;
+}
+
+void deleteGraph(graph* graf) {
+	for (int i = 0;i < graf->v;i++) {
+		list* pom = graf->adj[i];
+		while (pom != nullptr) {
+			list* tren = pom;
+			tren = tren->sledeci;
+			delete pom;
+		}
+
+	}
+	delete[] graf->adj;
+	delete graf;
+}
+#include <fstream>
+graph* createGraphFile(string filename) {
+	ifstream f(filename);
+	graph* graf = new graph;
+	f >> graf->e >> graf->v;
+	
+	graf->adj = new list * [graf->v];
+	for (int i = 0; i < graf->v; i++)
+	{
+		graf->adj[i] = nullptr;
+	}
+	int u, v;
+	for (int i = 0; i < graf->e; i++)
+	{
+		f >> u >> v;
+
+		list* pom = createList(u);
+		pom->sledeci = graf->adj[v];
+		graf->adj[v] = pom;
+
+		pom = createList(v);
+		pom->sledeci = graf->adj[u];
+		graf->adj[u] = pom;
+	}
+	f.close();
+	return graf;
+}
+
+int main() {
+
+	return 0;
+}
+
+
+
+168. Računanje ulaznog i izlaznog stepena čvora grafa predstavljenog pomoću matrice
+susedstva.
+
+#include <iostream>
+using namespace std;
+
+struct graph {
+	int v, e;
+	int** adj;
+};
+
+
+graph* createGraph(int cvorovi,int grane) {
+	graph* graf = new graph;
+
+	graf->v = cvorovi;
+	graf->e = grane;
+
+	graf->adj = new int* [graf->v];
+	for (int i = 0; i < graf->v; i++)
+	{
+		graf->adj[i] = new int[graf->v];
+		for (int j = 0; j < graf->v; j++)
+		{
+			graf->adj[i][j] = 0;
+		}
+	}
+	int u, v;
+	for (int i = 0; i < graf->e; i++)
+	{
+		cout << "unesite graf[i][j]: ";
+		cin >> u >> v;
+		cout << endl;
+		graf->adj[u][v] = 1;
+	}
+
+	return graf;
+}
+
+int izlazniBr(graph g, int br) {
+	int broj = 0;
+	for (int i = 0;i < g.v;i++) {
+		if (g.adj[br][i] == 1)broj++;
+	}
+	return broj;
+}
+
+int ulazniBr(graph g, int br) {
+	int broj = 0;
+	for (int i = 0;i < g.v;i++) {
+		if (g.adj[i][br] == 1)broj++;
+	}
+	return broj;
+}
+
+int main() {
+
+	return 0;
+}
+
+
+169. U ulaznoj datoteci ulaz.txt, u prvom redu je dat prirodan broja n. U ostalih n
+redova je dato n cifara. Svaka cifra je 0 ili 1. Ovakva struktura predstavlja matricu
+susedstva grafa G. Učitati graf, predstaviti ga uz pomoć linearnih listi i
+implementirati BFS algoritam za tako predstavljen graf. Na standardni izlaz
+zapisati brojeve od 1 do n u redosledu obilaska čvorova datog grafa.
+
+FAJL
+4
+0 1 0 1
+1 0 1 0
+0 1 0 1
+1 0 1 0
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+struct node {
+	int broj;
+	struct node* sledeci;
+};
+
+struct graph {
+	int v;
+	node** adj;
+};
+
+node* createNode(int br) {
+	node* pom = new node;
+	pom->broj = br;
+	pom->sledeci = nullptr;
+	return pom;
+}
+
+graph* createGraph(string filename) {
+	ifstream f(filename);
+	if (!f) {
+		cout << "greska pri otvaranju fajla";
+		return nullptr;
+	}
+	int n;
+	f >> n;
+	graph* graf = new graph;
+	graf->v = n;
+	graf->adj = new node * [graf->v];
+	for (int i = 0; i < n; i++)
+	{
+		graf->adj[i] = nullptr;
+	}
+
+	int pom;
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			f >> pom;
+			if (pom == 1 && j > i) {
+				
+				node* pomocna = createNode(j);
+				pomocna->sledeci = graf->adj[i];
+				graf->adj[i] = pomocna;
+
+				pomocna = createNode(i);
+				pomocna->sledeci = graf->adj[j];
+				graf->adj[j] = pomocna;
+
+			}
+		}
+	}
+	f.close();
+	return graf;
+}
+
+struct queue {
+	node* prednji;
+	node* zadnji;
+};
+
+queue* createQueue() {
+	queue* q = new queue;
+	q->prednji = q->zadnji = nullptr;
+	return q;
+}
+
+bool isEmpty(queue* q) {
+	return q->prednji == nullptr;
+}
+
+void enqueue(queue* q, int broj) {
+	if (q == nullptr) {
+		cout << "greska";
+		return;
+	}
+	node* pom = createNode(broj);
+	if (q->prednji == nullptr) {
+		q->prednji = q->zadnji = pom;
+	}
+	else {
+		q->zadnji->sledeci = pom;
+		q->zadnji = pom;
+	}
+}
+
+int dequeue(queue* q) {
+	if (isEmpty(q) == true) {
+		cout << "Queue je vec prazan";
+		return -1;
+	}
+	node* pom = q->prednji;
+	int pb = q->prednji->broj;
+	q->prednji = q->prednji->sledeci;
+	delete pom;
+	if (q->prednji == nullptr)q->zadnji = nullptr;
+	return pb;
+}
+
+void BFS(graph* graf, int start) {
+	bool* posecen = new bool[graf->v];
+
+	for (int i = 0; i < graf->v; i++)
+		posecen[i] = false;
+	
+	queue* q = createQueue();
+	enqueue(q, start);
+	posecen[start] = true;
+
+	while (isEmpty(q) != true) {
+		int tren = dequeue(q);
+		cout << tren + 1 << " ";
+
+		node* pom = graf->adj[tren];
+		while (pom != nullptr) {
+			int kom = pom->broj;
+			if (posecen[kom] == false) {
+				posecen[kom] = true;
+				enqueue(q, kom);
+			}
+			pom = pom->sledeci;
+		}
+	}
+	delete[] posecen;
+	delete q;
+}
+
+int main() {
+
+	graph* g = createGraph("ulaz.txt");
+	if (g)
+		BFS(g, 0);
+	return 0;
+}
+
+
+
+170. Dato je binarno neuređeno stablo. Pronaći elemente sa najvećim brojem
+pojavljivanja. Na standardnom izlazu, u jednom redu odštampati najpre (najveći)
+broj pojavljivanja, a zatim i elemente sa tim brojem pojavljivanja. Za rešavanje
+ovog zadatka koristiti BFS algoritam za pretragu grafa.
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+// Struktura čvora stabla
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+};
+
+// Struktura reda za BFS
+struct QueueNode {
+    Node* treeNode;
+    QueueNode* next;
+};
+
+struct Queue {
+    QueueNode* front;
+    QueueNode* rear;
+};
+
+void initQueue(Queue &q) {
+    q.front = q.rear = nullptr;
+}
+
+bool isEmpty(Queue &q) {
+    return q.front == nullptr;
+}
+
+void enqueue(Queue &q, Node* node) {
+    QueueNode* temp = new QueueNode;
+    temp->treeNode = node;
+    temp->next = nullptr;
+    if(q.rear == nullptr) {
+        q.front = q.rear = temp;
+    } else {
+        q.rear->next = temp;
+        q.rear = temp;
+    }
+}
+
+Node* dequeue(Queue &q) {
+    if(isEmpty(q)) return nullptr;
+    QueueNode* temp = q.front;
+    Node* node = temp->treeNode;
+    q.front = q.front->next;
+    if(q.front == nullptr) q.rear = nullptr;
+    delete temp;
+    return node;
+}
+
+// Struktura za brojanje pojavljivanja
+struct CountNode {
+    int value;
+    int count;
+    CountNode* next;
+};
+
+// Dodavanje ili inkrementiranje broja pojavljivanja
+void addOrIncrement(CountNode* &head, int val) {
+    CountNode* temp = head;
+    while(temp != nullptr) {
+        if(temp->value == val) {
+            temp->count++;
+            return;
+        }
+        temp = temp->next;
+    }
+    // Ako ne postoji, dodaj novi čvor
+    CountNode* newNode = new CountNode;
+    newNode->value = val;
+    newNode->count = 1;
+    newNode->next = head;
+    head = newNode;
+}
+
+// Kreiranje novog čvora stabla
+Node* newNode(int val) {
+    Node* n = new Node;
+    n->data = val;
+    n->left = n->right = nullptr;
+    return n;
+}
+
+int main() {
+    ifstream fin("ulaz.txt");
+    if(!fin) {
+        cout << "Ne mogu otvoriti fajl!" << endl;
+        return 1;
+    }
+
+    int n;
+    fin >> n;
+    if(n == 0) return 0;
+
+    int* values = new int[n];
+    for(int i = 0; i < n; i++) fin >> values[i];
+
+    // Kreiranje stabla (leve i desne grane redom)
+    Node** nodes = new Node*[n];
+    for(int i = 0; i < n; i++) nodes[i] = newNode(values[i]);
+
+    int idx = 0; // indeks roditelja
+    for(int i = 1; i < n; i++) {
+        if(nodes[idx]->left == nullptr) {
+            nodes[idx]->left = nodes[i];
+        } else if(nodes[idx]->right == nullptr) {
+            nodes[idx]->right = nodes[i];
+            idx++; // idemo na sledećeg roditelja
+        }
+    }
+
+    Node* root = nodes[0];
+
+    // BFS obilazak i brojanje pojavljivanja
+    Queue q;
+    initQueue(q);
+    enqueue(q, root);
+
+    CountNode* counts = nullptr;
+
+    while(!isEmpty(q)) {
+        Node* curr = dequeue(q);
+        addOrIncrement(counts, curr->data);
+
+        if(curr->left != nullptr) enqueue(q, curr->left);
+        if(curr->right != nullptr) enqueue(q, curr->right);
+    }
+
+    // Pronalaženje maksimalnog broja pojavljivanja
+    int maxCount = 0;
+    CountNode* temp = counts;
+    while(temp != nullptr) {
+        if(temp->count > maxCount) maxCount = temp->count;
+        temp = temp->next;
+    }
+
+    // Ispis rezultata
+    cout << maxCount;
+    temp = counts;
+    while(temp != nullptr) {
+        if(temp->count == maxCount) cout << " " << temp->value;
+        temp = temp->next;
+    }
+    cout << endl;
+
+    // Čišćenje memorije
+    delete[] values;
+    delete[] nodes;
+    // Ne brisemo listu counts i čvorove stabla radi jednostavnosti (može se dodati kasnije)
+
+    return 0;
+}
+
+
+
+// ovaj kod dole i ne valja bas ovaj gore je dobar
+
+7
+5 3 7 3 5 7 3
+0 1 0 0 0 0 0
+1 0 1 0 0 0 0
+0 1 0 1 1 0 0
+0 0 1 0 0 0 0
+0 0 1 0 0 1 1
+0 0 0 0 1 0 0
+0 0 0 0 1 0 0
+
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+struct node {
+    int broj;
+    struct node* sledeci;
+};
+
+struct graph {
+    int v;          // broj čvorova
+    int* vrednosti; // vrednosti u čvorovima (brojevi u stablu)
+    node** adj;     // adjacency lista
+};
+
+node* createNode(int br) {
+    node* pom = new node;
+    pom->broj = br;
+    pom->sledeci = nullptr;
+    return pom;
+}
+
+// Učitavanje grafa iz fajla
+graph* createGraph(string filename) {
+    ifstream f(filename);
+    if (!f) {
+        cout << "Greska pri otvaranju fajla!";
+        return nullptr;
+    }
+    int n;
+    f >> n;
+    graph* graf = new graph;
+    graf->v = n;
+    graf->adj = new node * [graf->v];
+    graf->vrednosti = new int[graf->v];
+
+    for (int i = 0; i < n; i++) {
+        f >> graf->vrednosti[i]; // učitavamo broj u čvoru
+    }
+
+    for (int i = 0; i < n; i++) {
+        graf->adj[i] = nullptr;
+    }
+
+    int pom;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            f >> pom;
+            if (pom == 1 && j > i) {
+                node* pomocna = createNode(j);
+                pomocna->sledeci = graf->adj[i];
+                graf->adj[i] = pomocna;
+
+                pomocna = createNode(i);
+                pomocna->sledeci = graf->adj[j];
+                graf->adj[j] = pomocna;
+            }
+        }
+    }
+    f.close();
+    return graf;
+}
+
+// ----- Queue -----
+struct queue {
+    node* prednji;
+    node* zadnji;
+};
+
+queue* createQueue() {
+    queue* q = new queue;
+    q->prednji = q->zadnji = nullptr;
+    return q;
+}
+
+bool isEmpty(queue* q) {
+    return q->prednji == nullptr;
+}
+
+void enqueue(queue* q, int broj) {
+    node* pom = createNode(broj);
+    if (q->prednji == nullptr) {
+        q->prednji = q->zadnji = pom;
+    } else {
+        q->zadnji->sledeci = pom;
+        q->zadnji = pom;
+    }
+}
+
+int dequeue(queue* q) {
+    if (isEmpty(q)) {
+        cout << "Queue je prazan!";
+        return -1;
+    }
+    node* pom = q->prednji;
+    int pb = q->prednji->broj;
+    q->prednji = q->prednji->sledeci;
+    delete pom;
+    if (q->prednji == nullptr) q->zadnji = nullptr;
+    return pb;
+}
+
+// BFS – ovde brojimo pojavljivanja
+void BFS(graph* graf, int start) {
+    bool* posecen = new bool[graf->v];
+    for (int i = 0; i < graf->v; i++) posecen[i] = false;
+
+    // niz za brojanje pojavljivanja (pretpostavljamo brojevi nisu preveliki)
+    int frekvencija[1000] = {0}; 
+
+    queue* q = createQueue();
+    enqueue(q, start);
+    posecen[start] = true;
+
+    while (!isEmpty(q)) {
+        int tren = dequeue(q);
+
+        // brojimo vrednost iz čvora
+        int broj = graf->vrednosti[tren];
+        frekvencija[broj]++;
+
+        node* pom = graf->adj[tren];
+        while (pom != nullptr) {
+            int kom = pom->broj;
+            if (!posecen[kom]) {
+                posecen[kom] = true;
+                enqueue(q, kom);
+            }
+            pom = pom->sledeci;
+        }
+    }
+
+    // nalazimo maksimum pojavljivanja
+    int maxPoj = 0;
+    for (int i = 0; i < 1000; i++) {
+        if (frekvencija[i] > maxPoj) {
+            maxPoj = frekvencija[i];
+        }
+    }
+
+    // ispis rezultata
+    cout << maxPoj;
+    for (int i = 0; i < 1000; i++) {
+        if (frekvencija[i] == maxPoj) {
+            cout << " " << i;
+        }
+    }
+    cout << endl;
+
+    delete[] posecen;
+    delete q;
+}
+
+// ----- MAIN -----
+int main() {
+    graph* graf = createGraph("stablo.txt");
+    if (graf == nullptr) return 0;
+
+    BFS(graf, 0); // krećemo od korena (čvor 0)
+
+    delete[] graf->vrednosti;
+    delete[] graf->adj;
+    delete graf;
+    return 0;
+}
+
+
+171. Neka je data datoteka u čijem prvom redu je broj n koji znači koliko čvorova ima
+graf, kao i broj m koji označava koliko grana ima dati graf. U ostalih m redova je
+dato a – b gde je data veza između čvorova a i b. Čvorovi su označeni od 0 do n-1.
+Učitati graf koji je predstavljen matricom susedstva. Odrediti sa koliko boja se dati
+graf može obojiti. Pretpostaviti da su svi čvorovi u grafu koji su povezani iste boje.
+(Koristiti DFS algoritam).
+
+6 4
+0 1
+1 2
+3 4
+4 5
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+struct graph {
+	int v, e;
+	int** adj;
+};
+
+graph* createGraph(string filename) {
+	ifstream f(filename);
+
+	graph* graf = new graph;
+	f >> graf->v >> graf->e;
+
+	graf->adj = new int* [graf->v];
+	for (int i = 0; i < graf->v; i++)
+	{
+		graf->adj[i] = new int[graf->v];
+		for (int j = 0; j < graf->v; j++)
+		{
+			graf->adj[i][j] = 0;
+		}
+	}
+	int a, b;
+	for (int i = 0; i < graf->e; i++)
+	{
+		f >> a >> b;
+		graf->adj[a][b] = 1;
+		graf->adj[b][a] = 1;
+	}
+	f.close();
+	return graf;
+}
+
+void dfs(graph* graf, int start,bool* pretrazen) {
+	pretrazen[start] = true;
+
+	for (int i = 0; i < graf->v; i++)
+	{
+		if(graf->adj[start][i]==1&&pretrazen[i]!=true){
+			dfs(graf, i, pretrazen);
+		}
+	}
+}
+
+void boje(graph* graf) {
+	bool* posecen = new bool[graf->v];
+	for (int i = 0; i < graf->v; i++)
+		posecen[i] = false;
+	
+	int br = 0;
+	for (int i = 0; i < graf->v; i++)
+	{
+		if (posecen[i] == false) {
+			dfs(graf, i, posecen);
+			br++;
+		}
+	}
+	cout << " graf se moze oboji sa: " << br << " boja";
+	delete[] posecen;
+}
+
+int main() {
+	graph* g = createGraph("graf.txt");
+	if (g)
+		boje(g);
+	return 0;
+}
+
+
+// topolosko sortiranje
+
+#include <iostream>
+using namespace std;
+
+struct node {
+	int vertex;
+	struct node* sledeci;
+};
+struct graph {
+	int v, e;
+	node** adj;
+};
+
+node* createNode(int br) {
+	node* pom = new node;
+	pom->vertex = br;
+	pom->sledeci = nullptr;
+	return pom;
+}
+
+graph* createGraph(int v,int e) {
+
+	graph* graf = new graph;
+	graf->e = e;
+	graf->v = v;
+	graf->adj = new node * [graf->v];
+	for (int i = 0; i < v; i++)
+	{
+		graf->adj[i] = nullptr;
+	}
+	int u, w;
+	for (int i = 0; i < e; i++)
+	{
+		cout << " u w: ";
+		cin >> u >> w;
+		cout << endl;
+
+		node* pom = createNode(w);
+		pom->sledeci = graf->adj[u];
+		graf->adj[u] = pom;
+	}
+	return graf;
+}
+
+struct queue {
+	node* prednji;
+	node* zadnji;
+};
+
+queue* createQueue() {
+	queue* q = new queue;
+	q->prednji = q->zadnji = nullptr;
+	return q;
+}
+
+bool isEmpty(queue* q) {
+	return q->prednji == nullptr;
+}
+
+void enqueue(queue* q, int broj) {
+	if (q == nullptr) {
+		cout << "greska";
+		return;
+	}
+	node* pom = createNode(broj);
+	if (q->prednji == nullptr) {
+		q->prednji = q->zadnji = pom;
+	}
+	else {
+		q->zadnji->sledeci = pom;
+		q->zadnji = pom;
+	}
+}
+
+int dequeue(queue* q) {
+	if (isEmpty(q) == true) {
+		cout << "Queue je vec prazan";
+		return -1;
+	}
+	node* pom = q->prednji;
+	int pb = q->prednji->vertex;
+	q->prednji = q->prednji->sledeci;
+	delete pom;
+	if (q->prednji == nullptr)q->zadnji = nullptr;
+	return pb;
+}
+
+void prebrojUlazni(graph* graf, int ulazni[]) {
+
+	for (int i = 0; i < graf->v; i++)
+	{
+		node* pom = graf->adj[i];
+		while (pom) {
+			ulazni[pom->vertex]++; //ako pom nije nullptr znaci da ima sledeci od njega i ti taj broj povecavamo
+			pom = pom->sledeci;
+		}
+	}
+}
+
+void topolosko(graph* graf) {
+	int izlaz[100];
+	int ulazni[100] = { 0 }; //	ovo kreira da ima 100 nule u niz
+	int br = 0;
+
+	prebrojUlazni(graf, ulazni);
+
+	queue* q = createQueue();
+
+	for (int i = 0; i < graf->v; i++)
+	{
+		if (ulazni[i] == 0)
+			enqueue(q, i); // svi koji imaju 0 ulazna ubacujemo u queue
+
+	}
+	while (!isEmpty(q)) {
+		int tren = dequeue(q);
+		izlaz[br++] = tren; 
+
+		node* pom = graf->adj[tren];
+
+		while (pom != nullptr) {
+			ulazni[pom->vertex]--; // od ovaj sto ima 0 ulazna smanjujemo za 1 ovom sto ulazi i ako je 0 ubacujemo u queue 
+			if (ulazni[pom->vertex] == 0) {
+				enqueue(q, pom->vertex);
+			}
+			pom = pom->sledeci;
+		}
+	}
+	
+	if (br != graf->v) {	//	mora da budu == inace graf nije aciklican
+		cout << "graf nije aciklican!";
+
+	}
+	else {
+		cout << "topoloski redosled: " << endl;
+			for(int i = 0; i <br; i++) {
+				cout << izlaz[i] << " ";
+			}
+		cout << endl;
+	}
+}
+	
+int main() {
+	int v, e;
+	cout << "Unesite broj cvorova i broj grana: ";
+	cin >> v >> e;
+
+	graph* g = createGraph(v, e);
+
+	topolosko(g);
+
+	return 0;
+}
+
+
+// minimalno razapinjajuce stablo kruskal
+
+#include <iostream>
+using namespace std;
+
+struct edge {
+	int u, v, w;
+};
+
+void sortB(edge edges[], int n){
+	for (int i = 0; i < n-1; i++){
+		for (int j = i + 1;j < n;j++) {
+			if (edges[i].w >= edges[j].w) {
+				edge pom = edges[i];
+				edges[i] = edges[j];
+				edges[j] = pom;
+			}
+		}
+	}
+}
+
+int find(int parent[], int i) {
+	while (parent[i] != i) {
+		i = parent[i];
+	}
+	return i;
+}
+
+void unite(int parent[], int u, int v) {
+	int _n = find(parent, u);
+	int _v = find(parent, v);
+	parent[_n] = _v;
+}
+
+void kruskal(edge edges[],int brCvor, int brGrana){
+	int roditelj[100];
+	for (int i = 0; i < brCvor; i++)
+	{
+		roditelj[i] = i; //	na pocetku mora stavimo da je svaki cvor svoj roditelj
+	}
+
+	edge mzs[100]; //	minimalno raziparajuce (ta rec) stablo
+	int br = 0;	//	broji koliko ivica ima mzs
+	
+	sortB(edges, brGrana);
+
+	for (int i = 0; i < brGrana && br < brCvor-1; i++)
+	{
+		int u = edges[i].u;
+		int v = edges[i].v;
+
+		int _u = find(roditelj, u);
+		int _v = find(roditelj, v);
+		
+		if (_u != _v) {
+			mzs[br++] = edges[i];
+			unite(roditelj,_u, _v);
+		}
+	}
+	if (br != brCvor - 1) {
+		cout << "GRESKA NE MOZE SE ODRADITI FUNCKIJA NA TAJ GRAF";
+	} else {
+		for (int i = 0; i < br; i++)
+		{
+			cout << "minimalno razapujuce stablo:\n";
+			cout << mzs[i].u << " - " << mzs[i].v << mzs[i].w << endl;
+		}
+	}
+
+}
+
+int main() {
+
+	edge edges[] = {
+		{0, 1, 4},
+		{0, 2, 3},
+		{1, 2, 1},
+		{1, 3, 2},
+		{2, 3, 4},
+		{3, 4, 2},
+		{4, 5, 6}
+	};
+
+	int brojCvorova = 6;
+	int brojGrana = 7;
+
+	kruskal(edges, brojCvorova, brojGrana);
+
+
+	return 0;
+}
+
+
+// djinsktrin algoritam
+
+
+#include <iostream>
+using namespace std;
+
+constexpr int MAX = 20;
+constexpr int NEPOZNATO = 100000;
+
+void buildGraph(int adj[][MAX], int brCvorova, int brGrana) {
+
+	for (int i = 0; i < brCvorova; i++)
+		for (int j = 0; j < brCvorova; j++)
+		{
+			adj[i][j] = 0;
+		}
+	int u, v, tezina;
+	for (int i = 0; i < brGrana; i++)
+	{
+		cout << "unesi vezu (u v) i njenu tezinu: ";
+		cin >> u >> v >> tezina;
+		cout << endl;
+
+		adj[u][v] = tezina;
+	}
+}
+
+void Djekson(int adj[][MAX], int brojCvorova, int start, int d[]) {
+	int id[MAX] = {};
+
+	for (int i = 0; i < brojCvorova; i++)
+	{
+		if (adj[start][i] != 0) {
+			d[i] = adj[start][i];
+		}
+		else {
+			d[i] = NEPOZNATO;
+		}
+		id[i] = 0;
+	}
+
+	d[start] = 0;//jer je rastojanje od samog sebe uvek 0;
+	id[start] = 1;
+	
+
+	for (int i = 0; i < brojCvorova-1; i++)
+	{
+		int sledeci = -1;
+		int minUdaljenost = NEPOZNATO;
+
+		for (int j = 0; j < brojCvorova; j++)
+		{
+			if (id[j] == 0 && d[j] < minUdaljenost) {
+				minUdaljenost = d[j];
+				sledeci = j;
+			}
+		}
+		
+		if (sledeci == -1) break;
+
+		id[sledeci] = 1;
+	
+		for (int j = 0; j < brojCvorova; j++)
+		{
+			if (id[j] == 0 && adj[sledeci][j] != 0) {
+				int novaUdaljenost = adj[sledeci][j] + d[sledeci];
+				if (novaUdaljenost < d[j]) {
+					d[j] = novaUdaljenost;
+				}
+			}
+		}
+	}
+}
+
+int main() {
+
+	int brojCvorova, brojGrana;
+	int adj[MAX][MAX];
+	int d[MAX];
+	int pocetni;
+
+	cout << "Unesi broj cvorova: ";
+	cin >> brojCvorova;
+
+	cout << "Unesi broj grana: ";
+	cin >> brojGrana;
+
+	buildGraph(adj, brojCvorova, brojGrana);
+
+	cout << "Unesi pocetni cvor (0 - " << brojCvorova - 1 << "): ";
+	cin >> pocetni;
+
+	Djekson(adj,brojCvorova, pocetni, d);
+
+	for (int i = 0; i < brojCvorova; i++) {
+		cout << "Najkraci put od cvora " << pocetni
+			<< " do cvora " << i << " je: " << d[i] << endl;
+	}
+
+	return 0;
+}
+
+
+
+// insertion sort
+
+#include <iostream>
+using namespace std;
+
+void insertionSort(int a[], int n) {
+    for (int i = 1; i < n; i++) {
+        int key = a[i];   // element koji ubacujemo
+        int j = i - 1;
+
+        // pomeramo elemente koji su veći od key
+        while (j >= 0 && a[j] > key) {
+            a[j + 1] = a[j];
+            j--;
+        }
+        // ubacujemo key na pravo mesto
+        a[j + 1] = key;
+    }
+}
+
+int main() {
+    int niz[] = {5, 2, 4, 6, 1, 3};
+    int n = 6;
+
+    cout << "Pre sortiranja: ";
+    for (int i = 0; i < n; i++) cout << niz[i] << " ";
+    cout << endl;
+
+    insertionSort(niz, n);
+
+    cout << "Posle sortiranja: ";
+    for (int i = 0; i < n; i++) cout << niz[i] << " ";
+    cout << endl;
+
+    return 0;
+}
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+//185. zadatak
+
+void insertionSort(int arr[], int n)
+{
+	for (int i =1; i < n; i++)
+	{
+		int tren = arr[n];
+		int j = i - 1;
+
+		while (j >= 0 && arr[j] > tren) {
+			arr[j + 1] = arr[j];
+			j--;
+		}
+		arr[j + 1] = tren;
+	}
+}
+void ispis(int arr[], int n) {
+
+	for (int i = 0; i < n; i++)
+	{
+		cout << arr[i] << " ";
+	}
+	cout << endl;
+}
+bool Pravougli(int a, int b, int c) {
+	if (a + b <= c || a + c <= b || b + c <= a)
+		return false;
+
+	return (a * a == b * b + c * c) || (b * b == c * c + a * a) || (c * c == a * a + b * b);
+}
+
+// 186. zadatak
+
+void ucenikSort(int n[], int m[],int duzinaN,int duzinaM) {
+
+	for (int j = 0; j < duzinaM; j++)
+	{
+	for (int i = duzinaN-1; i >= 0;i--) {
+		if (m[j] > n[i]) {
+			n[i] = m[j];
+			break;
+			}
+		}
+	}
+}
+
+int main1() {
+	int arr[] = { 12, 5, 3, 13, 4, 10 };int br = 0;
+	insertionSort(arr, 6);
+	for (int i = 0; i < 4; i++)
+	{
+		if (Pravougli(arr[i], arr[i + 1], arr[i + 2]) == true)br++;
+	}
+	cout << br << endl;
+	return 0;
+}
+
+
+//	MNOGO VOLIM DA MI CHATGPT PISE MAINOVI WOHOO NECU DA PISEM OVO IDEMO 
+int main() {
+	const int MAX = 100000;
+	int n[MAX], m[MAX];
+	int duzinaN, duzinaM;
+
+	cout << "Unesi broj ucenika u pocetnom redu: ";
+	cin >> duzinaN;
+
+	cout << "Unesi visine " << duzinaN << " ucenika (rastuce):\n";
+	for (int i = 0; i < duzinaN; i++) {
+		cin >> n[i];
+	}
+
+	cout << "Unesi broj pridoslih ucenika: ";
+	cin >> duzinaM;
+
+	cout << "Unesi visine " << duzinaM << " pridoslih ucenika:\n";
+	for (int i = 0; i < duzinaM; i++) {
+		cin >> m[i];
+	}
+
+	// Primeni pravila ubacivanja
+	ucenikSort(n, m, duzinaN, duzinaM);
+
+	// Ispisi rezultat
+	cout << "\nNovi red ucenika:\n";
+	for (int i = 0; i < duzinaN; i++) {
+		cout << n[i] << " ";
+	}
+	cout << endl;
+
+	return 0;
+}
+
+
+
+// nekakvo particionisanje 
+
+#include <iostream>
+using namespace std;
+
+void ispis(int arr[], int n) {
+
+	for (int i = 0; i < n; i++)
+	{
+		cout << arr[i] << " ";
+	}
+	cout << endl;
+}
+
+void izmeni(int& a, int& b) {
+	int pom = a;
+	 a= b;
+	 b = pom;
+}
+
+void insertionSort(int arr[], int n) {
+	for (int i = 1; i < n; i++)
+	{
+		int tren = arr[i];
+		int j = i - 1;
+
+		while (j >=0 && arr[j] > tren) {
+			arr[j + 1] = arr[j];
+			j--;
+		}
+		arr[j + 1] = tren;
+	}
+	ispis(arr, n);
+}
+
+int particionisi(int arr[], int pocetak, int kraj) {
+	int pivot = arr[kraj];
+	int i = pocetak - 1;
+
+	for (int j = pocetak; j < kraj; j++)
+	{
+		if (pivot > arr[j]) {
+			i++;
+			izmeni(arr[i], arr[j]);
+		}
+	}
+	i++;
+	izmeni(arr[i], arr[kraj]);
+	return i;
+}
+
+void quickSort(int arr[], int pocetak, int kraj) {
+	if (pocetak > kraj)return;
+
+	int pivot = particionisi(arr, pocetak, kraj);
+		
+		quickSort(arr,pocetak,pivot-1);
+		quickSort(arr, pivot + 1, kraj);
+}
+
+int main() {
+	int arr[] = { 5,2,4,6,1,3 };
+	int arr2[] = { 5,2,4,6,1,3 };
+
+	insertionSort(arr, 6);
+	quickSort(arr2, 0, 5);
+	ispis(arr2, 6);
+	return 0;
+}
+
+
+// ne znamm
+#include <iostream>
+using namespace std;
+
+void insertionSort(int arr[], int n) {
+
+	for (int i = 1; i < n; i++)
+	{
+		int kljuc = arr[i];
+		int j = i - 1;
+
+		while (j >= 0 && arr[j] > kljuc) {
+			arr[j + 1] = arr[j];    // Pomeranje
+			j--;
+		}
+
+		arr[j + 1] = kljuc;           // Ubacivanje elementa na pravo mesto
+
+	}
+
+}
+
+void insertionSortSamPravljen(int arr[], int duzina)
+{
+	for (int i = 1; i < duzina; i++)
+	{
+		int tren = arr[i];
+		int j = i - 1;	//	mora stalno apdejtujemo j da je iza i jer ga menjamo
+
+		while (j >= 0 && arr[j] > tren) {	//	j>= 0 jer niz nema -1 elemenat a svaki prosli mora bude veci od trenutni kako bi bilo sortirano
+			arr[j + 1] = arr[j];	
+			j--;	//	ovo radimo da bi videli dal je i na primer j-1 ili j-2 isto veci do trenutni kako bi znali i njega da zamenimo
+		}
+		
+		arr[j + 1] = tren; //	imamo j+1 jer kad fejla upit i arr[j] nije vece od tren  to znaci da ne treba da se menja taj j pa moramo da ga povecamo za 1 jer tu ide trenutni
+	}
+}
+
+void ispis(int arr[], int n) {
+	for (int i = 0; i < n; i++)
+	{
+		cout << arr[i] << " ";
+	}
+	cout << endl;
+}
+
+void izmeni(int& a, int& b) {
+	int pom = a;
+	a = b;
+	b = pom;
+}
+
+
+//	gledaj od Bro Code quickSort mrzi me da pisem
+int particionisi(int arr[], int pocetak, int kraj) {
+	int pivot = arr[kraj];
+	int i= pocetak - 1;
+
+	for (int j = pocetak; j < kraj; i++)
+	{
+		if (pivot > arr[j]) {
+			i++;
+			izmeni(arr[i], arr[j]);
+		}
+	}
+	izmeni(arr[i+1], arr[kraj]);
+	return i + 1;
+}
+
+int particionisiSam(int arr[], int pocetak, int kraj) {
+
+	int pivot = arr[kraj];
+	int i = pocetak - 1;
+	for (int j = pocetak; j < kraj; j++)
+	{
+		if (arr[j] < pivot) {
+			i++;
+			izmeni(arr[i], arr[j]);
+		}
+	}
+	i++;
+	izmeni(arr[i], arr[kraj]);
+	return i;
+}
+
+void quickSort(int arr[], int pocetak, int kraj) {
+	if (kraj <= pocetak)return;
+	int pivot = particionisiSam(arr, pocetak, kraj);
+
+	quickSort(arr, pocetak, pivot - 1);
+	quickSort(arr, pivot + 1, kraj);
+}
+
+
+int main() {
+	int arr[] = { 5,2,4,6,1,3 };
+	quickSort(arr, 0, 5);
+	//insertionSort(arr, 6);
+	ispis(arr, 6);
+
+	return 0;
+}
+
+187.
+Odštampajte elemente niza u opadajućoj frekvenciji. Ako 2 broja imaju istu
+frekvenciju odštampajte onaj koji je došao prvi.
+Input: arr[] = {2, 5, 2, 8, 5, 6, 8, 8}
+Output: arr[] = {8, 8, 8, 2, 2, 5, 5, 6}
+
+
+#include <iostream>
+using namespace std;
+
+struct niz {
+    int broj;
+    int frek;
+};
+
+bool duplikat(int broj, int n, niz nizz[]) {
+    for (int i = 0; i < n; i++)
+    {
+        if (nizz[i].broj == broj) {
+            nizz[i].frek++;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+
+int ucitajNiz(int arr[], int n, niz array[]) {
+    int duzinaNiz = 0;
+    for (int i = 0; i < n; i++)
+    {
+        if (duplikat(arr[i], duzinaNiz, array) == false) {
+            array[duzinaNiz].broj = arr[i];
+            array[duzinaNiz].frek = 1;
+            duzinaNiz++;
+        }
+    }
+    return duzinaNiz;
+}
+
+void sortirajFrekvencije(niz array[], int duzinaNiz) {
+    for (int i = 0; i < duzinaNiz; i++)
+    {
+        niz tren = array[i];
+        int j = i - 1;
+
+        while (j >= 0 && array[j].frek < tren.frek) {
+            array[j + 1] = array[j];
+            j--;
+        }
+        array[j + 1] = tren;
+    }
+}
+
+void ispis(niz array[], int duzina) {
+    for (int i = 0;i < duzina;i++)
+        for (int j = 0; j < array[i].frek; j++)
+        {
+            cout << array[i].broj << " ";
+        }
+    cout << endl;
+}
+
+int main() {
+    niz array[100];
+    int niz[100] = { 2,5,2,10,5,6,8,8 };
+    int n = 8;
+    int duzina = ucitajNiz(niz, n, array);
+    sortirajFrekvencije(array, duzina);
+    ispis(array, duzina);
+
+    return 0;
+}
+
+186.
+U niz je, prema visini, poređano n ≤ 105 učenika (od najnižeg do najvišeg). U
+zadatom redosledu dolaze još m ≤ 105 učenika i treba ih ubaciti u niz. Za i-tog
+pridošlog učenika treba naći učenika u nizu sa najvećim indeksom čija je visina
+strogo manja od visine i-tog pridošlog učenika, izbaciti ga, i na njegovo mesto
+ubaciti pridošlog učenika (ukoliko takav učenik ne postoji, pridošli učenik ne ulazi
+u red). Štampati novi niz učenika.
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+
+
+
+int main() {
+
+	ifstream fajl1("ucenici.txt");
+	ifstream fajl2("fajl2.txt");
+	int n, m;
+	if (!fajl1 || !fajl2) {
+		cout << "Greska prilikom otvaranja fajla";
+		return -1;
+	}
+	
+	fajl1 >> n;
+	int* niz = new int[n];
+	for (int i = 0;i < n;i++) {
+		int br;
+		fajl1 >> br;
+		niz[i] = br;
+	}
+
+	fajl2 >> m;
+	for (int j = 0;j < m;j++) {
+		int broj;
+		fajl2 >> broj;
+		for (int i = n-1;i >= 0;i--) {
+			if (niz[i] < broj) {
+				niz[i] = broj;
+				break;
+			}
+			
+		}
+
+	}
+	for (int i = 0; i < n; i++)
+	{
+		cout << niz[i] << " ";
+	}
+
+	fajl1.close();
+	fajl2.close();
+	delete[] niz;
+
+	return 0;
+}
+
+
+190.
+Dati su celobrojni nizovi a i b dužina n i m, redom (n≤m≤105). U nizu a su svi
+elementi različiti, dok u nizu b to ne mora biti slučaj, ali je poznato da se u nizu b
+svaki element niza a nalazi bar jednom. Naći najkraći uzastopni podniz niza b tako
+da se u njemu svaki element nalazi barem jednom.
+
+
+#include <iostream>
+#include <climits>
+using namespace std;
+
+// Funkcija koja vraća indeks elementa x u nizu a
+// Ako element ne postoji, vraća -1
+int nadjiIndeks(int* nizA, int duzinaA, int x) {
+    for (int i = 0; i < duzinaA; i++) {
+        if (nizA[i] == x) return i;
+    }
+    return -1;
+}
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+
+    int* nizA = new int[n]; // niz sa obaveznim elementima
+    int* nizB = new int[m]; // glavni niz
+
+    for (int i = 0; i < n; i++) cin >> nizA[i];
+    for (int i = 0; i < m; i++) cin >> nizB[i];
+
+    int* prisutno = new int[n]; // broj pojavljivanja elemenata iz a u prozoru
+    for (int i = 0; i < n; i++) prisutno[i] = 0;
+
+    int brojRazlicitih = 0; // koliko različitih elemenata iz a trenutno imamo u prozoru
+    int levo = 0;
+    int najmanjaDuzina = INT_MAX;
+
+    for (int desno = 0; desno < m; desno++) {
+        int indeks = nadjiIndeks(nizA, n, nizB[desno]);
+        if (indeks != -1) {
+            prisutno[indeks]++;
+            if (prisutno[indeks] == 1) brojRazlicitih++; // prvi put vidimo ovaj element
+        }
+
+        while (brojRazlicitih == n) { // imamo sve elemente iz niza a
+            int trenutnaDuzina = desno - levo + 1;
+            if (trenutnaDuzina < najmanjaDuzina) najmanjaDuzina = trenutnaDuzina;
+
+            int indeks2 = nadjiIndeks(nizA, n, nizB[levo]);
+            if (indeks2 != -1) {
+                prisutno[indeks2]--;
+                if (prisutno[indeks2] == 0) brojRazlicitih--; // izgubili smo jednog potrebnog
+            }
+            levo++;
+        }
+    }
+
+    cout << najmanjaDuzina << endl;
+
+    delete[] nizA;
+    delete[] nizB;
+    delete[] prisutno;
+    return 0;
+}
+
+
+191.
+Dato je n ≤ 106 krava koje je poređano u niz. Za svaku kravu znamo mi – jačina
+mu-ovanja koji proizvodi krava i hi – visinu krave. Kada i-ta krava muče nju čuju
+samo prva krava sa leve i desne strane koje imaju strogo veću visinu od i-te. Jačina
+zvuka koju čuje krava j je suma svih jačina koje je ona čula. Naći maksimalnu jačinu
+zvuka koju je neka krava čula.
+
+#include <iostream>
+using namespace std;
+
+struct krava {
+	int mu;
+	int visina;
+	int suma;
+};
+
+void ucitajKrave(krava niz[], int n) {
+	for (int i = 0; i < n; i++)
+	{
+		cout << "unesite jacinu mu-a i visinu krave za " << i+1 << "-tu kravu:";
+		cin >> niz[i].mu >> niz[i].visina;
+		niz[i].suma = 0;
+		cout << endl;
+	}
+}
+
+void izracunajMu(krava niz[], int n) {
+	for (int i = 0; i < n; i++)	{
+
+		for (int j = i+1; j < n; j++)
+		{
+			if (niz[i].visina < niz[j].visina) {
+				niz[j].suma += niz[i].mu;
+				break;
+			}
+		}
+
+		for (int j = i-1; j >=0; j--)
+		{
+			if (niz[i].visina < niz[j].visina) {
+				niz[j].suma += niz[i].mu;
+				break;
+			}
+		}
+
+	}
+}
+
+int nadjiMaxMuu(krava niz[], int n) {
+	int max = -1;
+	for (int i = 0; i < n; i++)
+	{
+		if (niz[i].suma > max)max = niz[i].suma;
+	}
+	return max;
+}
+
+int main(){
+	int n;
+	cout << "Unesite broj krava: ";
+	cin >> n;
+
+	krava niz[1000];
+
+	ucitajKrave(niz, n);
+	izracunajMu(niz, n);
+	int maxZvuk = nadjiMaxMuu(niz, n);
+
+	cout << "Najveca jacina zvuka koju je neka krava cula je: " << maxZvuk << endl;
+
+	return 0;
+}
+
+189.
+Dato je n ≤ 5000 dasaka različitih dužina manjih od 104. Odrediti koliko je
+pravouglih trouglova moguće sastaviti pomoću njih.
+
+
+#include <iostream>
+using namespace std;
+
+void sort(int arr[], int n) {
+	for (int i = 0; i < n; i++)
+	{
+		int tren = arr[i];
+		int j = i - 1;
+
+		while (j >= 0 && arr[j] > tren) {
+			arr[j + 1] = arr[j];
+			j--;
+		}
+		arr[j + 1] = tren;
+		}
+	}
+
+int pravougaonici(int a,int b,int c) {
+	if (a + b <= c || a + c <= b || c + b <= a)return -1;
+
+	if (a * a == b * b + c * c || b * b == a * a + c * c || c * c == a * a + b * b) return 1;
+	
+	return 0;
+	}
+	
+
+
+int main() {
+	
+	int arr[100] = { 5, 6, 8, 10, 15, 17 };
+	sort(arr, 6);
+	for (int i = 0; i < 6; i++)
+		cout << arr[i] << " ";
+	cout<< endl;
+	int brojac = 0;
+	for (int i = 0; i < 4; i++)
+		for(int j = i+1;j < 5;j++)
+			for (int k = j+1; k < 6; k++)
+			{
+				if (pravougaonici(arr[i], arr[j], arr[k]) == 1)brojac++;
+			}
+	
+	cout << "Imamo " << brojac << " mogucih trouglova";
+
+		return 0;
+
+}
+
+
+
+/*U programskom jeziku C++ napisati program koji za graf G traži prost put od početnog čvora s do krajnjeg d. 
+Neka je graf zadat u datoteci ulaz.txt gde se u prvom redu zadaje broj čvorova grafa n, 
+gde pretpostavljamo da su brojevi čvora od 1-n. Nakon toga ide broj veza, u istom redu, broj m, 
+a zatim u narednih nekoliko redova je data po jedna veza sa crticom između njih.*/
+
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
+
+struct CvorReda {
+    int vrednost;
+    CvorReda* sledeci;
+};
+
+struct Red {
+    CvorReda* prvi;
+    CvorReda* poslednji;
+};
+
+void inicijalizuj(Red& r) {
+    r.prvi = nullptr;
+    r.poslednji = nullptr;
+}
+
+bool prazno(Red& r) {
+    return r.prvi == nullptr;
+}
+
+void stavi(Red& r, int x) {
+    CvorReda* novi = new CvorReda{x, nullptr};
+    if (r.poslednji) r.poslednji->sledeci = novi;
+    r.poslednji = novi;
+    if (!r.prvi) r.prvi = novi;
+}
+
+int uzmi(Red& r) {
+    if (prazno(r)) return -1;
+    CvorReda* temp = r.prvi;
+    int val = temp->vrednost;
+    r.prvi = r.prvi->sledeci;
+    if (!r.prvi) r.poslednji = nullptr;
+    delete temp;
+    return val;
+}
+
+// Lista suseda grafa
+struct Lista {
+    int* niz;
+    int kapacitet;
+    int duzina;
+};
+
+void inicijalizujListu(Lista& l, int kap) {
+    l.niz = new int[kap];
+    l.kapacitet = kap;
+    l.duzina = 0;
+}
+
+void dodaj(Lista& l, int x) {
+    if (l.duzina < l.kapacitet) {
+        l.niz[l.duzina++] = x;
+    }
+}
+
+int main() {
+    ifstream ulaz("ulaz.txt");
+    int n, m;
+    ulaz >> n >> m;
+
+    // alociramo niz listi za svaki čvor
+    Lista* graf = new Lista[n+1];
+    for (int i = 1; i <= n; i++) {
+        inicijalizujListu(graf[i], n); // u najgorem slučaju može imati sve susede
+    }
+
+    // učitavanje veza
+    for (int i = 0; i < m; i++) {
+        string veza;
+        ulaz >> veza;
+        int poz = veza.find('-');
+        int a = stoi(veza.substr(0, poz));
+        int b = stoi(veza.substr(poz+1));
+        dodaj(graf[a], b);
+        dodaj(graf[b], a);
+    }
+
+    int s, d;
+    cout << "Unesi pocetni cvor: ";
+    cin >> s;
+    cout << "Unesi krajnji cvor: ";
+    cin >> d;
+
+    int* roditelj = new int[n+1];
+    for (int i = 0; i <= n; i++) roditelj[i] = -1;
+
+    Red red;
+    inicijalizuj(red);
+
+    stavi(red, s);
+    roditelj[s] = 0;
+
+    // BFS
+    while (!prazno(red)) {
+        int trenutni = uzmi(red);
+        for (int i = 0; i < graf[trenutni].duzina; i++) {
+            int sused = graf[trenutni].niz[i];
+            if (roditelj[sused] == -1) {
+                roditelj[sused] = trenutni;
+                stavi(red, sused);
+            }
+        }
+    }
+
+    // Rekonstrukcija puta
+    int* put = new int[n+1];
+    int duzinaPuta = 0;
+
+    if (roditelj[d] != -1) {
+        int t = d;
+        while (t != 0) {
+            put[duzinaPuta++] = t;
+            t = roditelj[t];
+        }
+    }
+
+    cout << "Put od " << s << " do " << d << ": ";
+    for (int i = duzinaPuta-1; i >= 0; i--) {
+        cout << put[i] << " ";
+    }
+    cout << endl;
+
+    // oslobađanje memorije
+    for (int i = 1; i <= n; i++) {
+        delete[] graf[i].niz;
+    }
+    delete[] graf;
+    delete[] roditelj;
+    delete[] put;
+
+    return 0;
+}
+
+
+
+
+
+
+// ovde je resenje bez crticu a gore sa crticu izmedju 1 - 2
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+struct CvorListe {
+    int broj;
+    CvorListe* sledeci;
+};
+
+struct Graf {
+    int v;              // broj čvorova
+    CvorListe** lista;  // niz listi suseda
+};
+
+struct CvorReda {
+    int broj;
+    CvorReda* sledeci;
+};
+
+struct Red {
+    CvorReda* prvi;
+    CvorReda* poslednji;
+};
+
+void inicijalizujRed(Red& r) {
+    r.prvi = nullptr;
+    r.poslednji = nullptr;
+}
+
+bool prazan(Red& r) {
+    return r.prvi == nullptr;
+}
+
+void stavi(Red& r, int broj) {
+    CvorReda* novi = new CvorReda{ broj, nullptr };
+    if (r.poslednji) r.poslednji->sledeci = novi;
+    r.poslednji = novi;
+    if (!r.prvi) r.prvi = novi;
+}
+
+int uzmi(Red& r) {
+    if (prazan(r)) return -1;
+    CvorReda* pom = r.prvi;
+    int val = pom->broj;
+    r.prvi = r.prvi->sledeci;
+    if (!r.prvi) r.poslednji = nullptr;
+    delete pom;
+    return val;
+}
+
+CvorListe* napraviCvor(int broj) {
+    CvorListe* novi = new CvorListe;
+    novi->broj = broj;
+    novi->sledeci = nullptr;
+    return novi;
+}
+
+Graf* napraviGraf(string fajl) {
+    ifstream ulaz(fajl);
+    if (!ulaz) {
+        cout << "Greska pri otvaranju fajla!\n";
+        return nullptr;
+    }
+    int n, m;
+    ulaz >> n >> m;
+    Graf* g = new Graf;
+    g->v = n;
+    g->lista = new CvorListe * [n];
+    for (int i = 0; i < n; i++) g->lista[i] = nullptr;
+
+    for (int i = 0; i < m; i++) {
+        int a, b;
+        ulaz >> a >> b;
+        // dodaj vezu a->b
+        CvorListe* pom = napraviCvor(b);
+        pom->sledeci = g->lista[a];
+        g->lista[a] = pom;
+        // dodaj vezu b->a (graf je neusmeren)
+        pom = napraviCvor(a);
+        pom->sledeci = g->lista[b];
+        g->lista[b] = pom;
+    }
+    ulaz.close();
+    return g;
+}
+
+void nadjiPut(Graf* g, int s, int d) {
+    int* roditelj = new int[g->v];
+    for (int i = 0; i < g->v; i++) roditelj[i] = -1;
+
+    Red red;
+    inicijalizujRed(red);
+    stavi(red, s);
+    roditelj[s] = s; // sam sebi roditelj
+
+    while (!prazan(red)) {
+        int trenutni = uzmi(red);
+        CvorListe* pom = g->lista[trenutni];
+        while (pom != nullptr) {
+            int sused = pom->broj;
+            if (roditelj[sused] == -1) {
+                roditelj[sused] = trenutni;
+                stavi(red, sused);
+            }
+            pom = pom->sledeci;
+        }
+    }
+
+    if (roditelj[d] == -1) {
+        cout << "Nema puta od " << s << " do " << d << endl;
+    }
+    else {
+        cout << "Put od " << s << " do " << d << ": ";
+        int put[1000]; // dovoljno veliko za ispitne primere
+        int duzina = 0;
+        int t = d;
+        while (t != s) {
+            put[duzina++] = t;
+            t = roditelj[t];
+        }
+        put[duzina++] = s;
+        for (int i = duzina - 1; i >= 0; i--)
+            cout << put[i] << " ";
+        cout << endl;
+    }
+
+    delete[] roditelj;
+}
+
+int main() {
+    Graf* g = napraviGraf("ulaz.txt");
+    if (g == nullptr) return -1;
+
+    int s, d;
+    cout << "Unesi pocetni cvor: ";
+    cin >> s;
+    cout << "Unesi krajnji cvor: ";
+    cin >> d;
+
+    nadjiPut(g, s, d);
+
+    return 0;
+}
+
+
+
+
+
+
+U programskom jeziku c++ napisati program koji ce ispisati dato binarno stablo u nerekurzivnom postorder obilasku neka je stablo zadato u datoteci
+ gde se u prvom redu nalazi broj celih brojeva a u ostalim n redova po jedan ceo broj
+
+
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
+// Struktura čvora binarnog stabla
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+};
+
+// Funkcija za kreiranje novog čvora
+Node* createNode(int value) {
+    Node* newNode = new Node;
+    newNode->data = value;
+    newNode->left = nullptr;
+    newNode->right = nullptr;
+    return newNode;
+}
+
+// Funkcija za umetanje u binarno stablo (BST)
+Node* insert(Node* root, int value) {
+    if (root == nullptr) {
+        return createNode(value);
+    }
+    if (value < root->data) {
+        root->left = insert(root->left, value);
+    } else {
+        root->right = insert(root->right, value);
+    }
+    return root;
+}
+
+// Sopstveni stek za čvorove
+struct StackNode {
+    Node* treeNode;
+    StackNode* next;
+};
+
+struct Stack {
+    StackNode* top;
+};
+
+// Funkcije za rad sa stekom
+void initStack(Stack &s) {
+    s.top = nullptr;
+}
+
+bool isEmpty(Stack &s) {
+    return s.top == nullptr;
+}
+
+void push(Stack &s, Node* node) {
+    StackNode* newNode = new StackNode;
+    newNode->treeNode = node;
+    newNode->next = s.top;
+    s.top = newNode;
+}
+
+Node* pop(Stack &s) {
+    if (isEmpty(s)) return nullptr;
+    StackNode* temp = s.top;
+    Node* treeNode = temp->treeNode;
+    s.top = s.top->next;
+    delete temp;
+    return treeNode;
+}
+
+Node* peek(Stack &s) {
+    if (isEmpty(s)) return nullptr;
+    return s.top->treeNode;
+}
+
+// Nerekurzivni postorder obilazak
+void postorderIterative(Node* root) {
+    if (!root) return;
+
+    Stack s1, s2;
+    initStack(s1);
+    initStack(s2);
+
+    push(s1, root);
+    while (!isEmpty(s1)) {
+        Node* curr = pop(s1);
+        push(s2, curr);
+
+        if (curr->left) push(s1, curr->left);
+        if (curr->right) push(s1, curr->right);
+    }
+
+    while (!isEmpty(s2)) {
+        Node* curr = pop(s2);
+        cout << curr->data << " ";
+    }
+    cout << endl;
+}
+
+int main() {
+    ifstream infile("stablo.txt");
+    if (!infile) {
+        cout << "Ne mogu otvoriti fajl!" << endl;
+        return 1;
+    }
+
+    int n;
+    infile >> n;
+
+    Node* root = nullptr;
+    for (int i = 0; i < n; i++) {
+        int value;
+        infile >> value;
+        root = insert(root, value);
+    }
+
+    cout << "Postorder obilazak stabla: ";
+    postorderIterative(root);
+
+    infile.close();
+    return 0;
+}
+
+U programskom jeziku c++ napisati program koji ce ispisati dato binarno stablo u nerekurzivnom postorder obilasku neka je stablo zadato u datoteci gde 
+se u prvom redu nalazi broj celih brojeva a u ostalim n redova po jedan ceo broj uradi ovaj zadatak daj primer fajla i nekoristi nijednu vec napravljenu strukturu
+
+
+
+// isti zadatak inorder
+
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
+// Struktura čvora stabla
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+};
+
+// Funkcija za kreiranje novog čvora
+Node* createNode(int value) {
+    Node* newNode = new Node;
+    newNode->data = value;
+    newNode->left = nullptr;
+    newNode->right = nullptr;
+    return newNode;
+}
+
+// Funkcija za umetanje vrednosti u binarno stablo (BST)
+Node* insert(Node* root, int value) {
+    if (root == nullptr) return createNode(value);
+
+    if (value < root->data)
+        root->left = insert(root->left, value);
+    else
+        root->right = insert(root->right, value);
+
+    return root;
+}
+
+// Struktura steka preko povezane liste
+struct StackNode {
+    Node* treeNode;
+    StackNode* next;
+};
+
+// Funkcija za dodavanje na stek
+void push(StackNode*& top, Node* node) {
+    StackNode* newNode = new StackNode;
+    newNode->treeNode = node;
+    newNode->next = top;
+    top = newNode;
+}
+
+// Funkcija za uklanjanje sa steka
+Node* pop(StackNode*& top) {
+    if (top == nullptr) return nullptr;
+    StackNode* temp = top;
+    Node* node = top->treeNode;
+    top = top->next;
+    delete temp;
+    return node;
+}
+
+// Provera da li je stek prazan
+bool isEmpty(StackNode* top) {
+    return top == nullptr;
+}
+
+// Nerekurzivni inorder obilazak
+void inorder(Node* root) {
+    StackNode* s = nullptr; // prazan stek
+    Node* current = root;
+
+    while (current != nullptr || !isEmpty(s)) {
+        while (current != nullptr) {
+            push(s, current);
+            current = current->left;
+        }
+
+        current = pop(s);
+        cout << current->data << " ";
+        current = current->right;
+    }
+}
+
+int main() {
+    ifstream file("stablo.txt");
+    if (!file) {
+        cout << "Ne mogu da otvorim fajl!" << endl;
+        return 1;
+    }
+
+    int n;
+    file >> n;
+
+    Node* root = nullptr;
+    int value;
+    for (int i = 0; i < n; i++) {
+        file >> value;
+        root = insert(root, value);
+    }
+
+    file.close();
+
+    cout << "Inorder obilazak stabla: ";
+    inorder(root);
+    cout << endl;
+
+    return 0;
+}
+
+
+Napisati C++ funkciju koja će vratiti najveći element u neuređenom binarnom
+stablu bez korišćenja rekurzije. Nakon toga napisati glavni program, stablo učitati
+iz datoteke i dati primer nalaženja najvećeg elementa.
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+typedef struct BinaryTreeNode {
+int data;
+struct BinaryTreeNode* left;
+struct BinaryTreeNode* right;
+} Node;
+typedef Node* Tree;
+struct ListNode
+{
+Tree data;
+struct ListNode* next;
+};
+struct Queue
+{
+struct ListNode* front;
+struct ListNode* rear;
+};
+Tree Create()
+{
+return nullptr;
+}
+Tree Add_uno(Tree koren, int b)
+{
+if (!koren)
+{
+koren = (Node*)malloc(sizeof(Node));
+if (koren)
+{
+koren->data = b;
+koren->left = koren->right = NULL;
+}
+}
+else if ((float)rand() / RAND_MAX < 0.5)
+koren->left = Add_uno(koren->left, b);
+else
+koren->right = Add_uno(koren->right, b);
+return koren;
+}
+
+Tree FRead_uno(string filename)
+{
+ifstream ulaz(filename);
+int n;
+ulaz >> n;
+Tree koren = nullptr;
+int i, b;
+for (i = 0; i < n; i++)
+{
+ulaz >> b;
+koren = Add_uno(koren, b);
+}
+ulaz.close();
+return koren;
+}
+struct Queue* CreateQueue()
+{
+struct Queue* Q;
+struct ListNode* temp;
+Q = (struct Queue*)malloc(sizeof(struct Queue));
+if (!Q)
+return nullptr;
+temp = (struct ListNode*)malloc(sizeof(struct ListNode));
+Q->front = Q->rear = nullptr;
+return Q;
+}
+int IsEmptyQueue(struct Queue* Q)
+{
+return (Q->front == nullptr);
+}
+void EnQueue(struct Queue* Q, Tree data)
+{
+struct ListNode* newNode;
+newNode = (struct ListNode*)malloc(sizeof(struct ListNode));
+if (!newNode)
+return;
+newNode->data = data;
+newNode->next = nullptr;
+if (Q->rear)
+Q->rear->next = newNode;
+Q->rear = newNode;
+if (Q->front == nullptr)
+Q->front = Q->rear;
+}
+Tree DeQueue(struct Queue* Q)
+{
+Tree data = nullptr;
+struct ListNode* temp;
+if (IsEmptyQueue(Q))
+{
+printf("Queue is empty");
+return 0;
+}
+else {
+temp = Q->front;
+data = Q->front->data;
+Q->front = Q->front->next;
+delete temp;
+}
+return data;
+}
+void DeleteQueue(struct Queue* Q)
+{
+struct ListNode* temp = nullptr;
+struct ListNode* forDelete;
+while (temp)
+{
+forDelete = temp;
+temp = temp->next;
+delete forDelete;
+}
+delete Q;
+}
+int FindMaxUsingLevelOrder(Tree root)
+{
+Tree temp;
+int max = INT_MIN;
+struct Queue* Q = CreateQueue();
+EnQueue(Q, root);
+while (!IsEmptyQueue(Q))
+{
+temp = DeQueue(Q);
+if (max < temp->data)
+max = temp->data;
+if (temp->left)
+EnQueue(Q, temp->left);
+if (temp->right)
+EnQueue(Q, temp->right);
+}
+DeleteQueue(Q);
+return max;
+}
+int main()
+{
+ifstream ulaz("ulaz.txt");
+Tree root = nullptr;
+root = FRead_uno("ulaz.txt");
+int maxElement = FindMaxUsingLevelOrder(root);
+cout << "Maksimalni element stabla je " << maxElement << endl;
+return 0;
+}
+
+
+
+// post order prolazak
+
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
+// Struktura čvora binarnog stabla
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+};
+
+// Kreiranje novog čvora
+Node* createNode(int value) {
+    Node* newNode = new Node;
+    newNode->data = value;
+    newNode->left = nullptr;
+    newNode->right = nullptr;
+    return newNode;
+}
+
+// Funkcija za umetanje u BST
+Node* insert(Node* root, int value) {
+    if (!root) return createNode(value);
+    if (value < root->data)
+        root->left = insert(root->left, value);
+    else
+        root->right = insert(root->right, value);
+    return root;
+}
+
+// Sopstveni stek za čvorove
+struct StackNode {
+    Node* treeNode;
+    StackNode* next;
+};
+
+struct Stack {
+    StackNode* top;
+};
+
+void initStack(Stack &s) { s.top = nullptr; }
+bool isEmpty(Stack &s) { return s.top == nullptr; }
+void push(Stack &s, Node* node) {
+    StackNode* newNode = new StackNode;
+    newNode->treeNode = node;
+    newNode->next = s.top;
+    s.top = newNode;
+}
+Node* pop(Stack &s) {
+    if (isEmpty(s)) return nullptr;
+    StackNode* temp = s.top;
+    Node* treeNode = temp->treeNode;
+    s.top = s.top->next;
+    delete temp;
+    return treeNode;
+}
+
+// Funkcija za nerekurzivni postorder (LDK)
+void postorderIterative(Node* root) {
+    if (!root) return;
+
+    Stack s1, s2;
+    initStack(s1);
+    initStack(s2);
+
+    push(s1, root);
+
+    while (!isEmpty(s1)) {
+        Node* curr = pop(s1);
+        push(s2, curr);
+
+        if (curr->left) push(s1, curr->left);
+        if (curr->right) push(s1, curr->right);
+    }
+
+    while (!isEmpty(s2)) {
+        Node* curr = pop(s2);
+        cout << curr->data << " ";
+    }
+    cout << endl;
+}
+
+int main() {
+    ifstream infile("ulaz.txt");
+    if (!infile) {
+        cout << "Ne mogu otvoriti fajl!" << endl;
+        return 1;
+    }
+
+    int n;
+    infile >> n;
+
+    Node* root = nullptr;
+    for (int i = 0; i < n; i++) {
+        int value;
+        infile >> value;
+        root = insert(root, value);
+    }
+
+    cout << "Postorder obilazak stabla: ";
+    postorderIterative(root);
+
+    infile.close();
+    return 0;
+}
+
+
+in order obilazak
+
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
+// Struktura čvora binarnog stabla
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+};
+
+// Kreiranje novog čvora
+Node* createNode(int value) {
+    Node* newNode = new Node;
+    newNode->data = value;
+    newNode->left = nullptr;
+    newNode->right = nullptr;
+    return newNode;
+}
+
+// Funkcija za umetanje u BST
+Node* insert(Node* root, int value) {
+    if (!root) return createNode(value);
+    if (value < root->data)
+        root->left = insert(root->left, value);
+    else
+        root->right = insert(root->right, value);
+    return root;
+}
+
+// Sopstveni stek za čvorove
+struct StackNode {
+    Node* treeNode;
+    StackNode* next;
+};
+
+struct Stack {
+    StackNode* top;
+};
+
+void initStack(Stack &s) { s.top = nullptr; }
+bool isEmpty(Stack &s) { return s.top == nullptr; }
+void push(Stack &s, Node* node) {
+    StackNode* newNode = new StackNode;
+    newNode->treeNode = node;
+    newNode->next = s.top;
+    s.top = newNode;
+}
+Node* pop(Stack &s) {
+    if (isEmpty(s)) return nullptr;
+    StackNode* temp = s.top;
+    Node* treeNode = temp->treeNode;
+    s.top = s.top->next;
+    delete temp;
+    return treeNode;
+}
+
+// Funkcija za nerekurzivni inorder (LDK)
+void inorderIterative(Node* root) {
+    Stack s;
+    initStack(s);
+    Node* curr = root;
+
+    while (curr != nullptr || !isEmpty(s)) {
+        // Idemo levo što više možemo
+        while (curr != nullptr) {
+            push(s, curr);
+            curr = curr->left;
+        }
+
+        // Obradimo čvor i idemo desno
+        curr = pop(s);
+        cout << curr->data << " ";
+        curr = curr->right;
+    }
+    cout << endl;
+}
+
+int main() {
+    ifstream infile("ulaz.txt");
+    if (!infile) {
+        cout << "Ne mogu otvoriti fajl!" << endl;
+        return 1;
+    }
+
+    int n;
+    infile >> n;
+
+    Node* root = nullptr;
+    for (int i = 0; i < n; i++) {
+        int value;
+        infile >> value;
+        root = insert(root, value);
+    }
+
+    cout << "Inorder obilazak stabla: ";
+    inorderIterative(root);
+
+    infile.close();
+    return 0;
+}
+
+
+// preorder obilazak
+
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
+// Struktura čvora binarnog stabla
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+};
+
+// Kreiranje novog čvora
+Node* createNode(int value) {
+    Node* newNode = new Node;
+    newNode->data = value;
+    newNode->left = nullptr;
+    newNode->right = nullptr;
+    return newNode;
+}
+
+// Funkcija za umetanje u BST
+Node* insert(Node* root, int value) {
+    if (!root) return createNode(value);
+    if (value < root->data)
+        root->left = insert(root->left, value);
+    else
+        root->right = insert(root->right, value);
+    return root;
+}
+
+// Sopstveni stek za čvorove
+struct StackNode {
+    Node* treeNode;
+    StackNode* next;
+};
+
+struct Stack {
+    StackNode* top;
+};
+
+void initStack(Stack &s) { s.top = nullptr; }
+bool isEmpty(Stack &s) { return s.top == nullptr; }
+void push(Stack &s, Node* node) {
+    StackNode* newNode = new StackNode;
+    newNode->treeNode = node;
+    newNode->next = s.top;
+    s.top = newNode;
+}
+Node* pop(Stack &s) {
+    if (isEmpty(s)) return nullptr;
+    StackNode* temp = s.top;
+    Node* treeNode = temp->treeNode;
+    s.top = s.top->next;
+    delete temp;
+    return treeNode;
+}
+
+// Funkcija za nerekurzivni preorder (KLD)
+void preorderIterative(Node* root) {
+    if (!root) return;
+
+    Stack s;
+    initStack(s);
+    push(s, root);
+
+    while (!isEmpty(s)) {
+        Node* curr = pop(s);
+        cout << curr->data << " ";
+
+        // Prvo desno, pa levo da bi se levio obrađivalo prvo
+        if (curr->right) push(s, curr->right);
+        if (curr->left) push(s, curr->left);
+    }
+    cout << endl;
+}
+
+int main() {
+    ifstream infile("ulaz.txt");
+    if (!infile) {
+        cout << "Ne mogu otvoriti fajl!" << endl;
+        return 1;
+    }
+
+    int n;
+    infile >> n;
+
+    Node* root = nullptr;
+    for (int i = 0; i < n; i++) {
+        int value;
+        infile >> value;
+        root = insert(root, value);
+    }
+
+    cout << "Preorder obilazak stabla: ";
+    preorderIterative(root);
+
+    infile.close();
+    return 0;
+}
+
+
+// post order ispis al iz zbirku
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+struct Stack
+{
+struct BinaryTreeNode* data;
+struct Stack* next;
+};
+struct Stack* CreateStack()
+{
+return nullptr;
+}
+void Push(struct Stack** top, struct BinaryTreeNode* data)
+{
+struct Stack* temp;
+temp = (struct Stack*)malloc(sizeof(struct Stack));
+if (!temp)
+return;
+temp->data = data;
+temp->next = *top;
+*top = temp;
+}
+bool IsEmptyStack(struct Stack* top)
+{
+return top == nullptr;
+}
+struct BinaryTreeNode* Pop(struct Stack** top)
+{
+struct BinaryTreeNode* data;
+struct Stack* temp;
+if (IsEmptyStack(*top))
+return nullptr;
+temp = *top;
+data = temp->data;
+*top = (*top)->next;
+delete temp;
+return data;
+}
+struct BinaryTreeNode* Top(struct Stack* top)
+{
+if (IsEmptyStack(top))
+return nullptr;
+return top->data;
+}
+void DeleteStack(struct Stack** top)
+{
+struct Stack* temp, * p;
+p = *top;
+while (p) {
+temp = p;
+p = p->next;
+free(temp);
+}
+delete *top;
+}
+typedef struct BinaryTreeNode
+{
+int data;
+struct BinaryTreeNode* left;
+struct BinaryTreeNode* right;
+} Node;
+typedef Node* Tree;
+Tree Add_uno(Tree koren, int b)
+{
+if (!koren)
+{
+koren = (Node*)malloc(sizeof(Node));
+if (koren)
+{
+koren->data = b;
+koren->left = koren->right = nullptr;
+}
+}
+else if ((float)rand() / RAND_MAX < 0.5)
+koren->left = Add_uno(koren->left, b);
+else
+koren->right = Add_uno(koren->right, b);
+return koren;
+}
+void PostOrderNonRecursive(struct BinaryTreeNode* root)
+{
+struct Stack* S = CreateStack();
+struct BinaryTreeNode* previous = nullptr;
+do
+{
+while (root != nullptr)
+{
+Push(&S, root);
+root = root->left;
+}
+while (root == nullptr && !IsEmptyStack(S))
+{
+root = Top(S);
+if (root->right == nullptr ||
+root->right == previous)
+{
+printf("%d ", root->data);
+Pop(&S);
+previous = root;
+root = nullptr;
+}
+else
+root = root->right;
+}
+} while (!IsEmptyStack(S));
+}
+
+
+int main()
+{
+srand((unsigned int)time(0));
+int n;
+ifstream input("ulaz.txt");
+Tree koren = NULL;
+input >> n;
+for (int i = 0; i < n; i++)
+{
+int d;
+input >> d;
+koren = Add_uno(koren, d);
+}
+PostOrderNonRecursive(koren);
+return(0);
+}
+
+
+/*Napisati C++ programi koji će graf obići u dubinu (DFS) algoritam. 
+Pretpostaviti da je graf zadat u datoteci ulaz.txt gde su u prvom redu zadati broj čvorova i broj grana, 
+a u ostalim redovima po dva broja u - v gde ovo označava da postoji grana između čvorova u i v. 
+Graf učitati kao listu i napisati DFS algoritam za tako učitan graf.*/
+
+5 4
+0 1
+0 2
+1 3
+3 4
+
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+// Struktura za listu susedstva (jednostruko povezana lista)
+struct Node {
+    int dest;
+    Node* next;
+};
+
+// Funkcija za dodavanje grane u listu susedstva
+void addEdge(Node* adjList[], int u, int v) {
+    // Dodaj v u listu u
+    Node* newNode = new Node;
+    newNode->dest = v;
+    newNode->next = adjList[u];
+    adjList[u] = newNode;
+
+    // Ako je graf neusmeren, dodaj u u listu v
+    newNode = new Node;
+    newNode->dest = u;
+    newNode->next = adjList[v];
+    adjList[v] = newNode;
+}
+
+// DFS funkcija (rekurzivna)
+void DFS(Node* adjList[], bool visited[], int u) {
+    visited[u] = true;
+    cout << u << " ";
+
+    Node* temp = adjList[u];
+    while (temp != nullptr) {
+        int v = temp->dest;
+        if (!visited[v]) {
+            DFS(adjList, visited, v);
+        }
+        temp = temp->next;
+    }
+}
+
+int main() {
+    ifstream inFile("ulaz.txt");
+    if (!inFile) {
+        cout << "Ne mogu otvoriti datoteku!" << endl;
+        return 1;
+    }
+
+    int n, m;
+    inFile >> n >> m;
+
+    // Kreiramo listu susedstva
+    Node* adjList[n];
+    for (int i = 0; i < n; i++) {
+        adjList[i] = nullptr;
+    }
+
+    // Učitavanje grana
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        inFile >> u >> v;
+        addEdge(adjList, u, v);
+    }
+
+    inFile.close();
+
+    // Niz za praćenje posećenih čvorova
+    bool visited[n];
+    for (int i = 0; i < n; i++) {
+        visited[i] = false;
+    }
+
+    cout << "DFS obilazak grafa: ";
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) {
+            DFS(adjList, visited, i);
+        }
+    }
+    cout << endl;
+
+    // Oslobađanje memorije
+    for (int i = 0; i < n; i++) {
+        Node* temp = adjList[i];
+        while (temp != nullptr) {
+            Node* next = temp->next;
+            delete temp;
+            temp = next;
+        }
+    }
+
+    return 0;
+}
+
+
+
+/*Elementi uređenog binarnog stabla su dati u datoteci zad2.in i to u prvom redu broj elementa n, 
+a u ostalih n redova po jedan ceo broj koji predstavlja element stabla. 
+Elemente dodavati u stablo u redosledu u kojem su dati u ulaznoj datoteci. 
+Napisati program koji će odrediti broj čvorova datog stabla koji se nalaze na i-tom nivou. 
+Rezultat upisati u datoteku zad2.out*/
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+// Struktura za čvor stabla
+struct Node {
+    int broj;
+    Node* levo;
+    Node* desno;
+};
+
+// Funkcija za kreiranje novog čvora
+Node* napraviCvor(int broj) {
+    Node* novi = new Node;
+    novi->broj = broj;
+    novi->levo = nullptr;
+    novi->desno = nullptr;
+    return novi;
+}
+
+// Ubacivanje u BST
+Node* ubaci(Node* koren, int broj) {
+    if (koren == nullptr) {
+        return napraviCvor(broj);
+    }
+    if (broj < koren->broj) {
+        koren->levo = ubaci(koren->levo, broj);
+    } else {
+        koren->desno = ubaci(koren->desno, broj);
+    }
+    return koren;
+}
+
+// Funkcija koja prebrojava čvorove na datom nivou
+int brojNaNivou(Node* koren, int nivo) {
+    if (koren == nullptr) return 0;
+    if (nivo == 0) return 1; // ako smo stigli na traženi nivo
+    return brojNaNivou(koren->levo, nivo - 1) + brojNaNivou(koren->desno, nivo - 1);
+}
+
+int main() {
+    ifstream inFile("zad2.in");
+    ofstream outFile("zad2.out");
+
+    if (!inFile) {
+        cout << "Greska pri otvaranju ulazne datoteke!" << endl;
+        return 1;
+    }
+    if (!outFile) {
+        cout << "Greska pri otvaranju izlazne datoteke!" << endl;
+        return 1;
+    }
+
+    int n;
+    inFile >> n;
+
+    Node* koren = nullptr;
+    for (int i = 0; i < n; i++) {
+        int broj;
+        inFile >> broj;
+        koren = ubaci(koren, broj);
+    }
+
+    int nivo;
+    inFile >> nivo;
+
+    int rezultat = brojNaNivou(koren, nivo);
+
+    outFile << rezultat << endl;
+
+    inFile.close();
+    outFile.close();
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
